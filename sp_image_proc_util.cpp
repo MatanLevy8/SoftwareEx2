@@ -19,6 +19,8 @@ int** spGetRGBHist(char* str, int nBins)
 	std::vector<Mat> rgb_planes;
 	split(src,rgb_planes);
 
+	printf("vector size is %d\n",rgb_planes.size());
+	fflush(NULL);
 	//assert(rgb_planes.size() == 3);
 
 	//set the range for RGB
@@ -31,6 +33,10 @@ int** spGetRGBHist(char* str, int nBins)
 	calcHist(&rgb_planes[0],1,0,Mat(),b_hist,1,&nBins,&histRange);
 	calcHist(&rgb_planes[1],1,0,Mat(),g_hist,1,&nBins,&histRange);
 	calcHist(&rgb_planes[2],1,0,Mat(),r_hist,1,&nBins,&histRange);
+
+	//  normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+	//  normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
+	//  normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
 
 
 	Mat* planes[2];
@@ -51,6 +57,22 @@ int** spGetRGBHist(char* str, int nBins)
 			}
 		}
 	}
+
+	  printf("new image...\n");
+	  fflush(NULL);
+	for (int i=0;i<3;i++)
+	{
+		for (int j=0;j<10;j++){
+			  printf("%d , ",return_array[i][j]);
+			  fflush(NULL);
+		  }
+		  printf("\n");
+		  fflush(NULL);
+	}
+	  printf("end...\n");
+	  fflush(NULL);
+
+
 	assert(return_array != NULL);
 	assert(return_array[0] != NULL);
 	assert(return_array[1] != NULL);
@@ -62,17 +84,18 @@ double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 {
 	assert(histA != NULL && histB!= NULL && nBins>0);
 	double l2_squared = 0,current_vector_dist;
-	int current_item;
+	double current_item;
 	for (int i=0;i<3;i++)
 	{
 		current_vector_dist = 0;
 		for (int j=0;j<nBins;j++){
 			{
 				current_item = histA[i][j] - histB[i][j];
-				current_vector_dist += current_item*current_item;
+				current_vector_dist += (0.33)*current_item*current_item;
+				assert(current_vector_dist>=0);
 			}
 		}
-		l2_squared += (0.33)*current_vector_dist;
+		l2_squared += current_vector_dist;
 	}
 	assert(l2_squared>=0);
 	return l2_squared;

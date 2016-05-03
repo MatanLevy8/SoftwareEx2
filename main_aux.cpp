@@ -113,7 +113,10 @@ void importSorted(int index, double distance, keyValue* items)
 		limit = 5;
 
 	//find where (if needed) should we insert the current item
-	for (j=0; j < limit && distance < items[j].value ;j++);
+	for (j=0; j < limit && distance > items[j].value ;j++);
+
+	if (limit < 5)
+		limit++;
 
 	if (j < 5) //push at j
 	{
@@ -131,6 +134,18 @@ void importSorted(int index, double distance, keyValue* items)
 	}
 }
 
+void printItems(keyValue* items){
+	printf("Array items : \n");
+	fflush(NULL);
+	for (int i=0;i<5;i++)
+	{
+		printf("[%d]: %f | ",items[i].key,items[i].value);
+		fflush(NULL);
+	}
+	printf("\n");
+	fflush(NULL);
+}
+
 void compareGlobalFeatures(settings* allSettings, imageData** imagesData,imageData* workingImageData )
 {
 	int i;
@@ -139,8 +154,14 @@ void compareGlobalFeatures(settings* allSettings, imageData** imagesData,imageDa
 	keyValue topFiveItems[5];
 	for (i=0;i<allSettings->numOfImages;i++)
 	{
-		importSorted(i,spRGBHistL2Distance((*imagesData)[i].rgbHist,workingImageData->rgbHist,allSettings->numOfBins)
+		double value = spRGBHistL2Distance((*imagesData)[i].rgbHist,
+				workingImageData->rgbHist,allSettings->numOfBins);
+		printItems(topFiveItems);
+		printf("Pushing item %d with value %f:\n",i,value);
+		fflush(NULL);
+		importSorted(i,value
 				,topFiveItems);
+		printItems(topFiveItems);
 	}
 	//print items
 	printf("Nearest images using global descriptors:\n");
