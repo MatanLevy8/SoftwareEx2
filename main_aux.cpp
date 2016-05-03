@@ -25,7 +25,7 @@ typedef struct keyValue{
 
 void getAsPositiveInt(char* message_type, int* value)
 {
-	printf("Enter number of %s\n",message_type);
+	printf("Enter number of %s:\n",message_type);
 	fflush(NULL);
 	scanf("%d", value);
 	fflush(NULL);
@@ -174,15 +174,15 @@ void compareGlobalFeatures(settings* allSettings, imageData** imagesData,imageDa
 void compareLocalFeatures(settings* allSettings, imageData** imagesData,imageData* workingImageData)
 {
 	//step 0 - create an index-counter array for the images
-	int counterArray[allSettings->numOfImages]; //TODO - verify that they are zeros
-
+	int *counterArray = (int*)malloc(sizeof(int)*(allSettings->numOfImages));
 	//step 1 - create the database object and the num of features array
-	double** databaseFeatures[allSettings->numOfImages];
-	int featuresPerImage[allSettings->numOfImages], *resultsArray;
+	double*** databaseFeatures = (double***)malloc(sizeof(double**)*(allSettings->numOfImages));
+	int *featuresPerImage=(int*)malloc(sizeof(int)*(allSettings->numOfImages)), *resultsArray;
 	int i,j, tempMaxIndex;
 
 	for (i=0;i<allSettings->numOfImages;i++)
 	{
+		counterArray[i] = 0;
 		databaseFeatures[i] = (*imagesData)[i].siftDesc;
 		featuresPerImage[i] = (*imagesData)[i].nFeatures;
 	}
@@ -217,7 +217,7 @@ void compareLocalFeatures(settings* allSettings, imageData** imagesData,imageDat
 		topItems[j] = tempMaxIndex;
 		counterArray[tempMaxIndex] = -1;
 	}
-	printf("Nearest images using local descriptors\n");
+	printf("Nearest images using local descriptors:\n");
 	fflush(NULL);
 	printf("%d, %d, %d, %d, %d\n", topItems[0], topItems[1], topItems[2], topItems[3], topItems[4]);
 	fflush(NULL);

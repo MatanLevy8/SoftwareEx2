@@ -138,6 +138,7 @@ double spL2SquaredDistance(double* featureA, double* featureB){
 	{
 		double current = featureA[i]-featureB[i];
 		l2_squared_dist += current*current;
+		assert(l2_squared_dist>=0);
 	}
 	return l2_squared_dist;
 }
@@ -163,6 +164,7 @@ int* spBestSIFTL2SquaredDistance(int bestNFeatures, double* featureA,
 		double*** databaseFeatures, int numberOfImages,
 		int* nFeaturesPerImage){
 	int totalNumberOfFeatures = 0;
+	distanceWithIndex* curr;
 	distanceWithIndex** distancesArray;
 	int* outputArray;
 	for (int i = 0; i < numberOfImages; i++) {
@@ -174,10 +176,10 @@ int* spBestSIFTL2SquaredDistance(int bestNFeatures, double* featureA,
 		int k = 0;
 		for (int i = 0; i < numberOfImages; i++) {
 			for (int j = 0; j < nFeaturesPerImage[i]; j++) {
-				distanceWithIndex curr;
-				curr.distance =  spL2SquaredDistance(databaseFeatures[i][j], featureA);
-				curr.index =  i;
-				distancesArray[k] = &curr;
+				curr = (distanceWithIndex*)malloc(sizeof(distanceWithIndex));
+				curr->distance =  spL2SquaredDistance(databaseFeatures[i][j], featureA);
+				curr->index =  i;
+				distancesArray[k] = curr;
 				k++;
 			}
 		}
