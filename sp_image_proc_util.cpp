@@ -19,7 +19,7 @@ int** spGetRGBHist(char* str, int nBins)
 	std::vector<Mat> rgb_planes;
 	split(src,rgb_planes);
 
-	assert(rgb_planes.size() == 3);
+	//assert(rgb_planes.size() == 3);
 
 	//set the range for RGB
 	float range[] = {0,256};
@@ -33,20 +33,21 @@ int** spGetRGBHist(char* str, int nBins)
 	calcHist(&rgb_planes[2],1,0,Mat(),r_hist,1,&nBins,&histRange);
 
 
-	std::vector<Mat*> planes;
-	planes.at(0) = &b_hist;
-	planes.at(1) = &g_hist;
-	planes.at(2) = &r_hist;
+	Mat* planes[2];
+	planes[0] = &b_hist;
+	planes[1] = &g_hist;
+	planes[2] = &r_hist;
 
 	//create the 2 dimensional array for the output
-	return_array = (int**)malloc(3*nBins*sizeof(int));
+	return_array = (int**)malloc(3*sizeof(int*));
 	//TODO - refactor to function ?
 	if (return_array!=NULL)
 	{
 		for (int i=0;i<3;i++)
 		{
+			return_array[i] = (int*)malloc(nBins*sizeof(int));
 			for (int j=0;j<nBins;j++){
-				return_array[i][j] = (planes.at(i))->at<int>(j);
+				return_array[i][j] = (int)(planes[i])->at<float>(0,j);
 			}
 		}
 	}
@@ -94,10 +95,11 @@ double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
 
 	//set the return matrix values
 
-	output_matrix = (double**)malloc(128*(*nFeatures)*sizeof(double));
+	output_matrix = (double**)malloc((*nFeatures)*sizeof(double*));
 	if (output_matrix != NULL){
 		for (int i = 0;i< *nFeatures;i++)
 		{
+			output_matrix[i] = (double*)malloc(128*sizeof(double));
 			for (int j = 0 ;j < 128 ;j++)
 			{
 				output_matrix[i][j] = destination_matrix.at<double>(i,j);

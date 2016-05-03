@@ -211,13 +211,13 @@ void searchSimilarImages(settings* allSettings, imageData** imagesData,char* ima
 
 void startInteraction(settings* allSettings, imageData** imagesData)
 {
-	char* workingImagePath = NULL;
+	char workingImagePath[1024];
 	printf("Enter a query image or # to terminate:\n");
 	fflush(NULL);
 	scanf("%s",workingImagePath);
 	fflush(NULL);
 	//TODO - verify that we wont fail on the first run since workingImagePath is null
-	while (!strcmp(workingImagePath,"#"))
+	while (strcmp(workingImagePath,"#"))
 	{
 		searchSimilarImages(allSettings,imagesData,workingImagePath);
 		printf("Enter a query image or # to terminate:\n");
