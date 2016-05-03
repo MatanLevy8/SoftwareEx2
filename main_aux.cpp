@@ -26,18 +26,23 @@ typedef struct keyValue{
 void getAsPositiveInt(char* message_type, int* value)
 {
 	printf("Enter number of %s\n",message_type);
-		scanf("%d", value);
-		if (*value < 1) {
-			printf("An error occurred - invalid number of %s\n",message_type);
-			exit(0); //TODO - verify we should exit like this
-		}
+	fflush(NULL);
+	scanf("%d", value);
+	fflush(NULL);
+	if (*value < 1) {
+		printf("An error occurred - invalid number of %s\n",message_type);
+		fflush(NULL);
+		exit(0); //TODO - verify we should exit like this
+	}
 }
 
 void generateFileNames(char* folderpath,char* image_prefix,char* image_suffix,settings* allSettings){
 	allSettings->filePathsArray = (char**)malloc(sizeof(char *)*allSettings->numOfImages);
-	char file_path[1024];
+	char* file_path;
 	for (int i =0 ; i< allSettings->numOfImages;i++){
-		sprintf(file_path,"%s/%s%d%s",folderpath,image_prefix,i,image_suffix);
+		file_path = (char*)malloc(1024*sizeof(char));
+		sprintf(file_path,"%s%s%d%s",folderpath,image_prefix,i,image_suffix);
+		fflush(NULL);
 		allSettings->filePathsArray[i] = file_path;
 	}
 }
@@ -72,15 +77,21 @@ settings* setInput()
 
 	//Handle input
 	printf("Enter images directory path:\n");
+	fflush(NULL);
 	scanf("%s", folderpath);
+	fflush(NULL);
 
 	printf("Enter images prefix:\n");
+	fflush(NULL);
 	scanf("%s", image_prefix);
+	fflush(NULL);
 
 	getAsPositiveInt("images",&(allSettings->numOfImages));
 
 	printf("Enter images suffix:\n");
+	fflush(NULL);
 	scanf("%s", image_suffix);
+	fflush(NULL);
 
 	getAsPositiveInt("bins",&(allSettings->numOfBins));
 	getAsPositiveInt("features",&(allSettings->numOfFeatures));
@@ -133,8 +144,10 @@ void compareGlobalFeatures(settings* allSettings, imageData** imagesData,imageDa
 	}
 	//print items
 	printf("Nearest images using global descriptors:\n");
+	fflush(NULL);
 	//TODO - can we assume that we have 5 items???
 	printf("%d, %d, %d, %d, %d\n",topFiveItems[0].key,topFiveItems[1].key,topFiveItems[2].key,topFiveItems[3].key,topFiveItems[4].key);
+	fflush(NULL);
 }
 
 void compareLocalFeatures(settings* allSettings, imageData** imagesData,imageData* workingImageData)
@@ -184,7 +197,9 @@ void compareLocalFeatures(settings* allSettings, imageData** imagesData,imageDat
 		counterArray[tempMaxIndex] = -1;
 	}
 	printf("Nearest images using local descriptors\n");
+	fflush(NULL);
 	printf("%d, %d, %d, %d, %d\n", topItems[0], topItems[1], topItems[2], topItems[3], topItems[4]);
+	fflush(NULL);
 }
 
 void searchSimilarImages(settings* allSettings, imageData** imagesData,char* imagePath)
@@ -198,15 +213,20 @@ void startInteraction(settings* allSettings, imageData** imagesData)
 {
 	char* workingImagePath = NULL;
 	printf("Enter a query image or # to terminate:\n");
+	fflush(NULL);
 	scanf("%s",workingImagePath);
+	fflush(NULL);
 	//TODO - verify that we wont fail on the first run since workingImagePath is null
 	while (!strcmp(workingImagePath,"#"))
 	{
 		searchSimilarImages(allSettings,imagesData,workingImagePath);
 		printf("Enter a query image or # to terminate:\n");
+		fflush(NULL);
 		scanf("%s",workingImagePath);
+		fflush(NULL);
 	}
 	printf("Exiting...\n");
+	fflush(NULL);
 }
 
 void start(){

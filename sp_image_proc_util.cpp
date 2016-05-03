@@ -2,19 +2,24 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/xfeatures2d.hpp"
+#include <assert.h>
 using namespace cv;
 
 
 int** spGetRGBHist(char* str, int nBins)
 {
+	assert(str != NULL && nBins >0);
 	int** return_array;
-	Mat src = imread(str,1);
+	Mat src = imread(str,CV_LOAD_IMAGE_COLOR);
 	if (!src.data){
+		assert(str == NULL);
 		return NULL; //TODO - check what should we return in this case
 	}
 	//separate the image to rgb planes
 	std::vector<Mat> rgb_planes;
 	split(src,rgb_planes);
+
+	assert(rgb_planes.size() == 3);
 
 	//set the range for RGB
 	float range[] = {0,256};
@@ -45,11 +50,16 @@ int** spGetRGBHist(char* str, int nBins)
 			}
 		}
 	}
+	assert(return_array != NULL);
+	assert(return_array[0] != NULL);
+	assert(return_array[1] != NULL);
+	assert(return_array[2] != NULL);
 	return return_array;
 }
 
 double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 {
+	assert(histA != NULL && histB!= NULL && nBins>0);
 	double l2_squared = 0,current_vector_dist;
 	int current_item;
 	for (int i=0;i<3;i++)
@@ -63,14 +73,17 @@ double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 		}
 		l2_squared += (0.33)*current_vector_dist;
 	}
+	assert(l2_squared>=0);
 	return l2_squared;
 }
 
 double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
 {
+	assert(str != NULL && maxNFeautres > 0 && nFeatures != NULL);
 	double** output_matrix;
 	std::vector<KeyPoint> keypoints;
-	Mat destination_matrix, src = imread(str,1);
+	Mat destination_matrix, src = imread(str,CV_LOAD_IMAGE_GRAYSCALE);
+	assert(src.data != NULL);
 
 	Ptr<xfeatures2d::SiftDescriptorExtractor> detect = xfeatures2d::SIFT::create(maxNFeautres);
 	detect->detect(src,keypoints,Mat());
