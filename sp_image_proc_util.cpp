@@ -61,7 +61,7 @@ double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 				current_vector_dist += current_item*current_item;
 			}
 		}
-		l2_squared += (1/3)*current_vector_dist;
+		l2_squared += (0.33)*current_vector_dist;
 	}
 	return l2_squared;
 }
@@ -143,7 +143,6 @@ int* spBestSIFTL2SquaredDistance(int bestNFeatures, double* featureA,
 				k++;
 			}
 		}
-
 		qsort(distancesArray, totalNumberOfFeatures, sizeof(distanceWithIndex), distanceWithIndexComparator);
 	}
 
@@ -154,10 +153,7 @@ int* spBestSIFTL2SquaredDistance(int bestNFeatures, double* featureA,
 			outputArray[i] = distancesArray[i]->index;
 		}
 	}
-
 	return outputArray;
-
-
 }
 
 
