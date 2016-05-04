@@ -18,11 +18,9 @@
 #define ENTER_IMAGES_SUFFIX "Enter images suffix:\n"
 #define MAX_IMAGE_PATH_LENGTH  1024
 #define NUM_OF_BEST_DIST_IMGS 5
+#define ALLOCATION_ERROR_MESSAGE "An error occurred - allocation failure\n"
 
 settings* allSettings = NULL;
-
-//TODO - strings messages should be macros
-//TODO - maybe we should make allSettings a global pointer
 
 /*typedef struct settings{
 	int numOfBins;
@@ -41,6 +39,36 @@ typedef struct keyValue{
 	int key;
 	double value;
 } keyValue;*/
+void clearSettings()
+{
+	int i;
+	if (allSettings != NULL)
+	{
+		if (allSettings->filePathsArray != NULL)
+		{
+			for (i=0;i<allSettings->numOfImages;i++)
+			{
+				free(allSettings->filePathsArray[i]);
+			}
+			free(allSettings->filePathsArray);
+		}
+		free(allSettings);
+	}
+}
+
+void reportErrorAndExit(const char* message)
+{
+	printf(message);
+	fflush(NULL);
+	if (allSettings != NULL)
+		clearSettings();
+	exit(-1); //TODO - check what error code should we return
+}
+
+void reportAllocationErrorAndExit()
+{
+	reportErrorAndExit(ALLOCATION_ERROR_MESSAGE);
+}
 
 void getAsPositiveInt(const char* message_type, int* value)
 {
@@ -49,36 +77,44 @@ void getAsPositiveInt(const char* message_type, int* value)
 	scanf("%d", value);
 	fflush(NULL);
 	if (*value < 1) {
-		printf(ERROR_MESSAGE, message_type);
-		fflush(NULL);
-		exit(0); //TODO - verify we should exit like this
+		reportErrorAndExit(ERROR_MESSAGE);
 	}
 }
 
 void generateFileNames(char* folderpath,char* image_prefix,char* image_suffix){
-	allSettings->filePathsArray = (char**)malloc(sizeof(char *)*allSettings->numOfImages);
+	allSettings->filePathsArray = (char**)calloc(allSettings->numOfImages, sizeof(char *));
 	char* file_path;
+
+	if (allSettings->filePathsArray == NULL)
+		reportAllocationErrorAndExit();
+
 	for (int i =0 ; i< allSettings->numOfImages;i++){
-		file_path = (char*) malloc(MAX_IMAGE_PATH_LENGTH * sizeof(char));
+		file_path = (char*)calloc(MAX_IMAGE_PATH_LENGTH, sizeof(char));
+		if (file_path == NULL)
+				reportAllocationErrorAndExit();
 		sprintf(file_path,"%s%s%d%s",folderpath,image_prefix,i,image_suffix);
 		fflush(NULL);
 		allSettings->filePathsArray[i] = file_path;
 	}
 }
 
-imageData calcImageData(char* filePath, int nBins, int maxNumFeatures)
+imageData* calcImageData(char* filePath, int nBins, int maxNumFeatures)
 {
-	imageData data;
-	data.rgbHist = spGetRGBHist(filePath, nBins);
-	data.siftDesc = spGetSiftDescriptors(filePath,maxNumFeatures,&data.nFeatures);
+	imageData* data = (imageData*)malloc(sizeof(imageData));
+	if (data == NULL)
+			reportAllocationErrorAndExit();
+	data->rgbHist = spGetRGBHist(filePath, nBins);
+	data->siftDesc = spGetSiftDescriptors(filePath,maxNumFeatures,&(data->nFeatures));
 	return data;
 }
 
 //This method calculates the histograms and the sift descriptors
-imageData* calcHistAndSIFTDesc()
+imageData** calcHistAndSIFTDesc()
 {
 	int i;
-	imageData* data = (imageData*)calloc(allSettings->numOfImages, sizeof(imageData));
+	imageData** data = (imageData**)calloc(allSettings->numOfImages, sizeof(imageData*));
+	if (data == NULL)
+			reportAllocationErrorAndExit();
 	for (i=0 ; i<allSettings->numOfImages ; i++)
 	{
 		data[i] = calcImageData(allSettings->filePathsArray[i],
@@ -91,6 +127,8 @@ imageData* calcHistAndSIFTDesc()
 void setInput()
 {
 	allSettings = (settings*)malloc(sizeof(settings));
+	if (allSettings == NULL)
+			reportAllocationErrorAndExit();
 	char folderpath[MAX_IMAGE_PATH_LENGTH];
 	char image_prefix[MAX_IMAGE_PATH_LENGTH];
 	char image_suffix[MAX_IMAGE_PATH_LENGTH];
@@ -120,18 +158,22 @@ void setInput()
 	generateFileNames(folderpath, image_prefix, image_suffix);
 }
 
-void importSorted(int index, double distance, keyValue* items)
+void importSorted(int index, double distance, keyValue** items)
 {
 	int limit = index, j, k;
-	keyValue current = {index, distance};
-	keyValue temp1,temp2;
+	keyValue* current = (keyValue*)malloc(sizeof(keyValue));
+	if (current == NULL)
+		reportAllocationErrorAndExit();
+	current->key = index;
+	current->value = distance;
+	keyValue *temp1, *temp2;
 
 	//used to handle the case that we haven't inserted 5 items yet
 	if (limit > NUM_OF_BEST_DIST_IMGS)
 		limit = NUM_OF_BEST_DIST_IMGS;
 
 	//find where (if needed) should we insert the current item
-	for (j=0; j < limit && distance > items[j].value ;j++);
+	for (j=0; j < limit && distance > items[j]->value ;j++);
 
 	if (limit < NUM_OF_BEST_DIST_IMGS)
 		limit++;
@@ -149,46 +191,58 @@ void importSorted(int index, double distance, keyValue* items)
 			items[k] = temp1;
 			temp1 = temp2;
 		}
+		//clear memory to the last item
+		free(temp1);
+	}
+	else
+	{
+		//clear memory of the unused item
+		free(current);
 	}
 }
 
 void compareGlobalFeatures(imageData** imagesData,imageData* workingImageData )
 {
 	int i;
-	//keyValue* topFiveItems = (keyValue*)malloc(5*sizeof(keyValue));
-	//TODO - if this work, delete the prev line
-	keyValue topItems[NUM_OF_BEST_DIST_IMGS];
+	keyValue* topItems[NUM_OF_BEST_DIST_IMGS];
 	for (i=0;i<allSettings->numOfImages;i++)
 	{
-		importSorted(i,spRGBHistL2Distance((*imagesData)[i].rgbHist,
+		importSorted(i,spRGBHistL2Distance(imagesData[i]->rgbHist,
 				workingImageData->rgbHist,allSettings->numOfBins) ,topItems);
 	}
 	//print items
 	printf(NEAREST_IMAGES_USING_GLOBAL_DESCRIPTORS);
 	fflush(NULL);
-	//TODO - can we assume that we have 5 items???
 
 	for (int i=0; i<NUM_OF_BEST_DIST_IMGS ;i++)
 	{
-		printf("%d%s",topItems[i].key,i == (NUM_OF_BEST_DIST_IMGS-1) ? "\n" : ", ");
+		printf("%d%s",topItems[i]->key,i == (NUM_OF_BEST_DIST_IMGS-1) ? "\n" : ", ");
 		fflush(NULL);
+		free(topItems[i]);
 	}
 }
 
 void compareLocalFeatures(imageData** imagesData,imageData* workingImageData)
 {
 	//step 0 - create an index-counter array for the images
-	int *counterArray = (int*)malloc(sizeof(int)*(allSettings->numOfImages));
+	int *counterArray = (int*)calloc(allSettings->numOfImages, sizeof(int));
+	if (counterArray == NULL)
+		reportAllocationErrorAndExit();
 	//step 1 - create the database object and the num of features array
-	double*** databaseFeatures = (double***)malloc(sizeof(double**)*(allSettings->numOfImages));
-	int *featuresPerImage=(int*)malloc(sizeof(int)*(allSettings->numOfImages)), *resultsArray;
+	double*** databaseFeatures = (double***)calloc(allSettings->numOfImages, sizeof(double**));
+	if (databaseFeatures == NULL)
+		reportAllocationErrorAndExit();
+	int *featuresPerImage=(int*)calloc(allSettings->numOfImages, sizeof(int)), *resultsArray;
+	if (featuresPerImage == NULL)
+		reportAllocationErrorAndExit();
+
 	int i,j, tempMaxIndex;
 
 	for (i=0;i<allSettings->numOfImages;i++)
 	{
 		counterArray[i] = 0;
-		databaseFeatures[i] = (*imagesData)[i].siftDesc;
-		featuresPerImage[i] = (*imagesData)[i].nFeatures;
+		databaseFeatures[i] = imagesData[i]->siftDesc;
+		featuresPerImage[i] = imagesData[i]->nFeatures;
 	}
 
 	//step 2 - for each feature in the working image send a request to compare the best 5
@@ -197,15 +251,14 @@ void compareLocalFeatures(imageData** imagesData,imageData* workingImageData)
 	{
 		resultsArray = spBestSIFTL2SquaredDistance(NUM_OF_BEST_DIST_IMGS, workingImageData->siftDesc[i], databaseFeatures,
 				allSettings->numOfImages, featuresPerImage);
+
 		for (j=0; j<NUM_OF_BEST_DIST_IMGS ; j++)
 		{
 			counterArray[resultsArray[j]]++;
 		}
 	}
 
-	// step 3 - sort the index counter array and get the best 5 (print the fuckers)
-
-	//TODO - verify that we can assume that we have at least 1 image
+	// step 3 - sort the index counter array and get the best 5
 
 	int topItems[NUM_OF_BEST_DIST_IMGS];
 	for (j=0;j<NUM_OF_BEST_DIST_IMGS;j++)
@@ -224,18 +277,76 @@ void compareLocalFeatures(imageData** imagesData,imageData* workingImageData)
 	printf(NEAREST_IMAGES_USING_LOCAL_DESCRIPTORS);
 	fflush(NULL);
 
-	for (int i=0; i<NUM_OF_BEST_DIST_IMGS ;i++)
+	for (i=0; i<NUM_OF_BEST_DIST_IMGS ;i++)
 	{
 		printf("%d%s",topItems[i],i == (NUM_OF_BEST_DIST_IMGS-1) ? "\n" : ", ");
 		fflush(NULL);
 	}
+
+	//free data
+
+
+	if (featuresPerImage != NULL)
+		free(featuresPerImage);
+	if (databaseFeatures != NULL)
+	{
+		for (i=0;i<allSettings->numOfImages;i++)
+		{
+			//TODO - this is not good check if realy nesseccery
+			free(databaseFeatures[i]);
+		}
+		free(databaseFeatures);
+	}
+	if (counterArray != NULL)
+		free(counterArray);
+
 }
 
+void freeImageData(imageData* image)
+{
+	int i;
+	if (image != NULL)
+	{
+		if (image->rgbHist != NULL)
+		{
+			for (i=0;i<3;i++)
+			{
+				free(image->rgbHist[i]);
+			}
+			free(image->rgbHist);
+		}
+		if (image->siftDesc != NULL)
+		{
+			for (i=0;i<image->nFeatures;i++)
+			{
+				free(image->siftDesc[i]);
+			}
+			free(image->siftDesc);
+		}
+		free(image);
+	}
+}
+
+void freeImages(imageData** images)
+{
+	int i;
+	if (images != NULL)
+	{
+		for (i=0;i<allSettings->numOfImages;i++)
+		{
+			freeImageData(images[i]);
+		}
+	}
+	free(images);
+}
 void searchSimilarImages(imageData** imagesData,char* imagePath)
 {
-	imageData workingImageData = calcImageData(imagePath, allSettings->numOfBins, allSettings->numOfFeatures);
-	compareGlobalFeatures(imagesData,&workingImageData);
-	compareLocalFeatures(imagesData,&workingImageData);
+	imageData* workingImageData = calcImageData(imagePath, allSettings->numOfBins, allSettings->numOfFeatures);
+	compareGlobalFeatures(imagesData, workingImageData);
+	compareLocalFeatures(imagesData, workingImageData);
+
+	freeImageData(workingImageData);
+
 }
 
 void startInteraction(imageData** imagesData)
@@ -245,7 +356,6 @@ void startInteraction(imageData** imagesData)
 	fflush(NULL);
 	scanf("%s",workingImagePath);
 	fflush(NULL);
-	//TODO - verify that we wont fail on the first run since workingImagePath is null
 	while (strcmp(workingImagePath,"#"))
 	{
 		searchSimilarImages(imagesData,workingImagePath);
@@ -261,8 +371,9 @@ void startInteraction(imageData** imagesData)
 void start(){
 	setInput();
 	//testSetInput(allSettings);
-	imageData* imagesData = calcHistAndSIFTDesc();
-	//TODO - THINK CAREFULLY ABOUT CLEANUP !!!! BITCH
-	startInteraction(&imagesData);
-	// call clean all
+	imageData** imagesData = calcHistAndSIFTDesc();
+	startInteraction(imagesData);
+
+	freeImages(imagesData);
+	clearSettings();
 }

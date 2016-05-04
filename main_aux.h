@@ -11,7 +11,7 @@ typedef struct settings{
 typedef struct imageData{
 	int** rgbHist;
 	double** siftDesc;
-	int nFeatures; //TODO - check maybe we should change to just int
+	int nFeatures;
 } imageData;
 
 typedef struct keyValue{
