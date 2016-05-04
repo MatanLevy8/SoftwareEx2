@@ -1,11 +1,30 @@
 #include "sp_image_proc_util.h"
+#include "tests.h" //TODO - DONT FORGET TO DELETE THIS
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define EXITING "Exiting...\n"
+#define ENTER_A_QUERY_IMAGE_OR_TO_TERMINATE "Enter a query image or # to terminate:\n"
+#define NEAREST_IMAGES_USING_LOCAL_DESCRIPTORS "Nearest images using local descriptors:\n"
+#define NEAREST_IMAGES_USING_GLOBAL_DESCRIPTORS "Nearest images using global descriptors:\n"
+#define FEATURES "features"
+#define BINS "bins"
+#define IMAGES "images"
+#define ENTER_IMAGES_PREFIX "Enter images prefix:\n"
+#define ENTER_IMAGES_DIRECTORY_PATH "Enter images directory path:\n"
+#define ERROR_MESSAGE "An error occurred - invalid number of %s\n"
+#define ENTER_NUMBER_OF "Enter number of %s:\n"
+#define ENTER_IMAGES_SUFFIX "Enter images suffix:\n"
+#define MAX_IMAGE_PATH_LENGTH  1024
+#define NUM_OF_BEST_DIST_IMGS 5
+
+settings* allSettings = NULL;
+
 //TODO - strings messages should be macros
 //TODO - maybe we should make allSettings a global pointer
 
-typedef struct settings{
+/*typedef struct settings{
 	int numOfBins;
 	int numOfFeatures;
 	int numOfImages;
@@ -21,26 +40,26 @@ typedef struct imageData{
 typedef struct keyValue{
 	int key;
 	double value;
-} keyValue;
+} keyValue;*/
 
-void getAsPositiveInt(char* message_type, int* value)
+void getAsPositiveInt(const char* message_type, int* value)
 {
-	printf("Enter number of %s:\n",message_type);
+	printf(ENTER_NUMBER_OF, message_type);
 	fflush(NULL);
 	scanf("%d", value);
 	fflush(NULL);
 	if (*value < 1) {
-		printf("An error occurred - invalid number of %s\n",message_type);
+		printf(ERROR_MESSAGE, message_type);
 		fflush(NULL);
 		exit(0); //TODO - verify we should exit like this
 	}
 }
 
-void generateFileNames(char* folderpath,char* image_prefix,char* image_suffix,settings* allSettings){
+void generateFileNames(char* folderpath,char* image_prefix,char* image_suffix){
 	allSettings->filePathsArray = (char**)malloc(sizeof(char *)*allSettings->numOfImages);
 	char* file_path;
 	for (int i =0 ; i< allSettings->numOfImages;i++){
-		file_path = (char*)malloc(1024*sizeof(char));
+		file_path = (char*) malloc(MAX_IMAGE_PATH_LENGTH * sizeof(char));
 		sprintf(file_path,"%s%s%d%s",folderpath,image_prefix,i,image_suffix);
 		fflush(NULL);
 		allSettings->filePathsArray[i] = file_path;
@@ -56,7 +75,7 @@ imageData calcImageData(char* filePath, int nBins, int maxNumFeatures)
 }
 
 //This method calculates the histograms and the sift descriptors
-imageData* calcHistAndSIFTDesc(settings* allSettings)
+imageData* calcHistAndSIFTDesc()
 {
 	int i;
 	imageData* data = (imageData*)calloc(allSettings->numOfImages, sizeof(imageData));
@@ -66,56 +85,39 @@ imageData* calcHistAndSIFTDesc(settings* allSettings)
 								allSettings->numOfBins,
 								allSettings->numOfFeatures);
 	}
-
 	return data;
 }
 
-
-settings* testSetInput()
+void setInput()
 {
-	settings* allSettings = (settings*)malloc(sizeof(settings));
-	char* folderpath = "./images/"; char* image_prefix = "img"; char* image_suffix = ".png";
-	allSettings->numOfImages = 17;
-	allSettings->numOfBins = 16;
-	allSettings->numOfFeatures = 100;
-
-	//generate files names
-	generateFileNames(folderpath, image_prefix, image_suffix, allSettings);
-
-	return allSettings;
-}
-
-
-settings* setInput()
-{
-	settings* allSettings = (settings*)malloc(sizeof(settings));
-	char folderpath[1024]; char image_prefix[1024]; char image_suffix[1024];
+	allSettings = (settings*)malloc(sizeof(settings));
+	char folderpath[MAX_IMAGE_PATH_LENGTH];
+	char image_prefix[MAX_IMAGE_PATH_LENGTH];
+	char image_suffix[MAX_IMAGE_PATH_LENGTH];
 
 	//Handle input
-	printf("Enter images directory path:\n");
+	printf(ENTER_IMAGES_DIRECTORY_PATH);
 	fflush(NULL);
 	scanf("%s", folderpath);
 	fflush(NULL);
 
-	printf("Enter images prefix:\n");
+	printf(ENTER_IMAGES_PREFIX);
 	fflush(NULL);
 	scanf("%s", image_prefix);
 	fflush(NULL);
 
-	getAsPositiveInt("images",&(allSettings->numOfImages));
+	getAsPositiveInt(IMAGES, &(allSettings->numOfImages));
 
-	printf("Enter images suffix:\n");
+	printf(ENTER_IMAGES_SUFFIX);
 	fflush(NULL);
 	scanf("%s", image_suffix);
 	fflush(NULL);
 
-	getAsPositiveInt("bins",&(allSettings->numOfBins));
-	getAsPositiveInt("features",&(allSettings->numOfFeatures));
+	getAsPositiveInt(BINS, &(allSettings->numOfBins));
+	getAsPositiveInt(FEATURES, &(allSettings->numOfFeatures));
 
 	//generate files names
-	generateFileNames(folderpath, image_prefix, image_suffix, allSettings);
-
-	return allSettings;
+	generateFileNames(folderpath, image_prefix, image_suffix);
 }
 
 void importSorted(int index, double distance, keyValue* items)
@@ -125,16 +127,16 @@ void importSorted(int index, double distance, keyValue* items)
 	keyValue temp1,temp2;
 
 	//used to handle the case that we haven't inserted 5 items yet
-	if (limit > 5)
-		limit = 5;
+	if (limit > NUM_OF_BEST_DIST_IMGS)
+		limit = NUM_OF_BEST_DIST_IMGS;
 
 	//find where (if needed) should we insert the current item
 	for (j=0; j < limit && distance > items[j].value ;j++);
 
-	if (limit < 5)
+	if (limit < NUM_OF_BEST_DIST_IMGS)
 		limit++;
 
-	if (j < 5) //push at j
+	if (j < NUM_OF_BEST_DIST_IMGS) //push at j
 	{
 		//push new item
 		temp1 = items[j];
@@ -150,44 +152,30 @@ void importSorted(int index, double distance, keyValue* items)
 	}
 }
 
-void printItems(keyValue* items){
-	printf("Array items : \n");
-	fflush(NULL);
-	for (int i=0;i<5;i++)
-	{
-		printf("[%d]: %f | ",items[i].key,items[i].value);
-		fflush(NULL);
-	}
-	printf("\n");
-	fflush(NULL);
-}
-
-void compareGlobalFeatures(settings* allSettings, imageData** imagesData,imageData* workingImageData )
+void compareGlobalFeatures(imageData** imagesData,imageData* workingImageData )
 {
 	int i;
 	//keyValue* topFiveItems = (keyValue*)malloc(5*sizeof(keyValue));
 	//TODO - if this work, delete the prev line
-	keyValue topFiveItems[5];
+	keyValue topItems[NUM_OF_BEST_DIST_IMGS];
 	for (i=0;i<allSettings->numOfImages;i++)
 	{
-		double value = spRGBHistL2Distance((*imagesData)[i].rgbHist,
-				workingImageData->rgbHist,allSettings->numOfBins);
-		printItems(topFiveItems);
-		printf("Pushing item %d with value %f:\n",i,value);
-		fflush(NULL);
-		importSorted(i,value
-				,topFiveItems);
-		printItems(topFiveItems);
+		importSorted(i,spRGBHistL2Distance((*imagesData)[i].rgbHist,
+				workingImageData->rgbHist,allSettings->numOfBins) ,topItems);
 	}
 	//print items
-	printf("Nearest images using global descriptors:\n");
+	printf(NEAREST_IMAGES_USING_GLOBAL_DESCRIPTORS);
 	fflush(NULL);
 	//TODO - can we assume that we have 5 items???
-	printf("%d, %d, %d, %d, %d\n",topFiveItems[0].key,topFiveItems[1].key,topFiveItems[2].key,topFiveItems[3].key,topFiveItems[4].key);
-	fflush(NULL);
+
+	for (int i=0; i<NUM_OF_BEST_DIST_IMGS ;i++)
+	{
+		printf("%d%s",topItems[i].key,i == (NUM_OF_BEST_DIST_IMGS-1) ? "\n" : ", ");
+		fflush(NULL);
+	}
 }
 
-void compareLocalFeatures(settings* allSettings, imageData** imagesData,imageData* workingImageData)
+void compareLocalFeatures(imageData** imagesData,imageData* workingImageData)
 {
 	//step 0 - create an index-counter array for the images
 	int *counterArray = (int*)malloc(sizeof(int)*(allSettings->numOfImages));
@@ -207,9 +195,9 @@ void compareLocalFeatures(settings* allSettings, imageData** imagesData,imageDat
 	// for each 5 returned increase a counter at the relevant index
 	for (i=0; i<workingImageData->nFeatures;i++)
 	{
-		resultsArray = spBestSIFTL2SquaredDistance(5, workingImageData->siftDesc[i], databaseFeatures,
+		resultsArray = spBestSIFTL2SquaredDistance(NUM_OF_BEST_DIST_IMGS, workingImageData->siftDesc[i], databaseFeatures,
 				allSettings->numOfImages, featuresPerImage);
-		for (j=0; j<5 ; j++)
+		for (j=0; j<NUM_OF_BEST_DIST_IMGS ; j++)
 		{
 			counterArray[resultsArray[j]]++;
 		}
@@ -219,8 +207,8 @@ void compareLocalFeatures(settings* allSettings, imageData** imagesData,imageDat
 
 	//TODO - verify that we can assume that we have at least 1 image
 
-	int topItems[5];
-	for (j=0;j<5;j++)
+	int topItems[NUM_OF_BEST_DIST_IMGS];
+	for (j=0;j<NUM_OF_BEST_DIST_IMGS;j++)
 	{
 		tempMaxIndex = 0;
 		for (i=0;i<allSettings->numOfImages;i++)
@@ -233,44 +221,48 @@ void compareLocalFeatures(settings* allSettings, imageData** imagesData,imageDat
 		topItems[j] = tempMaxIndex;
 		counterArray[tempMaxIndex] = -1;
 	}
-	printf("Nearest images using local descriptors:\n");
+	printf(NEAREST_IMAGES_USING_LOCAL_DESCRIPTORS);
 	fflush(NULL);
-	printf("%d, %d, %d, %d, %d\n", topItems[0], topItems[1], topItems[2], topItems[3], topItems[4]);
-	fflush(NULL);
+
+	for (int i=0; i<NUM_OF_BEST_DIST_IMGS ;i++)
+	{
+		printf("%d%s",topItems[i],i == (NUM_OF_BEST_DIST_IMGS-1) ? "\n" : ", ");
+		fflush(NULL);
+	}
 }
 
-void searchSimilarImages(settings* allSettings, imageData** imagesData,char* imagePath)
+void searchSimilarImages(imageData** imagesData,char* imagePath)
 {
 	imageData workingImageData = calcImageData(imagePath, allSettings->numOfBins, allSettings->numOfFeatures);
-	compareGlobalFeatures(allSettings,imagesData,&workingImageData);
-	compareLocalFeatures(allSettings,imagesData,&workingImageData);
+	compareGlobalFeatures(imagesData,&workingImageData);
+	compareLocalFeatures(imagesData,&workingImageData);
 }
 
-void startInteraction(settings* allSettings, imageData** imagesData)
+void startInteraction(imageData** imagesData)
 {
-	char workingImagePath[1024];
-	printf("Enter a query image or # to terminate:\n");
+	char workingImagePath[MAX_IMAGE_PATH_LENGTH];
+	printf(ENTER_A_QUERY_IMAGE_OR_TO_TERMINATE);
 	fflush(NULL);
 	scanf("%s",workingImagePath);
 	fflush(NULL);
 	//TODO - verify that we wont fail on the first run since workingImagePath is null
 	while (strcmp(workingImagePath,"#"))
 	{
-		searchSimilarImages(allSettings,imagesData,workingImagePath);
-		printf("Enter a query image or # to terminate:\n");
+		searchSimilarImages(imagesData,workingImagePath);
+		printf(ENTER_A_QUERY_IMAGE_OR_TO_TERMINATE);
 		fflush(NULL);
 		scanf("%s",workingImagePath);
 		fflush(NULL);
 	}
-	printf("Exiting...\n");
+	printf(EXITING);
 	fflush(NULL);
 }
 
 void start(){
-	//settings* allSettings = setInput();
-	settings* allSettings = testSetInput();
-	imageData* imagesData = calcHistAndSIFTDesc(allSettings);
+	setInput();
+	//testSetInput(allSettings);
+	imageData* imagesData = calcHistAndSIFTDesc();
 	//TODO - THINK CAREFULLY ABOUT CLEANUP !!!! BITCH
-	startInteraction(allSettings, &imagesData);
+	startInteraction(&imagesData);
 	// call clean all
 }

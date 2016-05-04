@@ -1,10 +1,16 @@
 #include "sp_image_proc_util.h"
+//#include "tests.h" //TODO - DONT FORGET TO DELETE THIS
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include <assert.h>
+
 using namespace cv;
 
+typedef struct distanceWithIndex {
+	double distance;
+	int index;
+} distanceWithIndex;
 
 int** spGetRGBHist(char* str, int nBins)
 {
@@ -19,10 +25,6 @@ int** spGetRGBHist(char* str, int nBins)
 	std::vector<Mat> rgb_planes;
 	split(src,rgb_planes);
 
-	//printf("vector size is %d\n",rgb_planes.size());
-	//fflush(NULL);
-	//assert(rgb_planes.size() == 3);
-
 	//set the range for RGB
 	float range[] = {0,256};
 	const float* histRange = {range};
@@ -33,11 +35,6 @@ int** spGetRGBHist(char* str, int nBins)
 	calcHist(&rgb_planes[0],1,0,Mat(),b_hist,1,&nBins,&histRange);
 	calcHist(&rgb_planes[1],1,0,Mat(),g_hist,1,&nBins,&histRange);
 	calcHist(&rgb_planes[2],1,0,Mat(),r_hist,1,&nBins,&histRange);
-
-	//  normalize(b_hist, b_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
-	//  normalize(g_hist, g_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
-	//  normalize(r_hist, r_hist, 0, histImage.rows, NORM_MINMAX, -1, Mat() );
-
 
 	Mat* planes[2];
 	planes[0] = &b_hist;
@@ -57,21 +54,6 @@ int** spGetRGBHist(char* str, int nBins)
 			}
 		}
 	}
-
-	  /*printf("new image...\n");
-	  fflush(NULL);
-	for (int i=0;i<3;i++)
-	{
-		for (int j=0;j<10;j++){
-			  printf("%d , ",return_array[i][j]);
-			  fflush(NULL);
-		  }
-		  printf("\n");
-		  fflush(NULL);
-	}
-	  printf("end...\n");
-	  fflush(NULL);
-*/
 
 	assert(return_array != NULL);
 	assert(return_array[0] != NULL);
@@ -101,26 +83,6 @@ double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 	return l2_squared;
 }
 
-void printMatrix(double ** matrix, int maxNFeautres)
-{
-	printf("Printing matrix...\n");
-	fflush(NULL);
-	for (int i =0;i<maxNFeautres;i++)
-	{
-		for (int j=0;j<128;j++)
-		{
-			if (j%8 == 0)
-			{
-				printf("\n");
-				fflush(NULL);
-			}
-			printf("%f | ",matrix[i][j]);
-			fflush(NULL);
-		}
-		printf("\n----------------------------row-------------------------------------------\n");
-		fflush(NULL);
-	}
-}
 //TODO - Check if we need to change the name features?
 double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
 {
@@ -139,10 +101,14 @@ double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
 	//set the features count
 	printf("keypoints size : %d and the mat rows size : %d\n",keypoints.size(),destination_matrix.rows);
 	fflush(NULL);
-	*nFeatures = keypoints.size() < maxNFeautres ? keypoints.size():maxNFeautres;//destination_matrix.rows;
+
+	//TODO - check wtf to do with this shit
+
+	//*nFeatures = (int)keypoints.size() < maxNFeautres ? keypoints.size():maxNFeautres;//destination_matrix.rows;
+	*nFeatures = keypoints.size();
+
 
 	//set the return matrix values
-
 	output_matrix = (double**)malloc((*nFeatures)*sizeof(double*));
 	if (output_matrix != NULL){
 		for (int i = 0;i< *nFeatures;i++)
@@ -151,54 +117,24 @@ double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
 			for (int j = 0 ;j < 128 ;j++)
 			{
 				output_matrix[i][j] = (double)(destination_matrix.at<float>(i,j));
-				//output_matrix[i][j] = destination_matrix.at<double>(i,j);
 			}
 		}
 	}
-	//printMatrix(output_matrix,maxNFeautres);
+
 	return output_matrix;
 }
 
-void printFeature(char* string, double* array)
-{
-	printf("%s : ",string);
-	fflush(NULL);
-	int i=0;
-	while (i < 128)
-	{
-		printf("%f | ",*array);
-		fflush(NULL);
-		if (i%6 == 1)
-		{
-			printf("\n");
-			fflush(NULL);
-		}
-		array++;
-		i++;
-	}
-	printf("\n");
-	fflush(NULL);
-}
-
 double spL2SquaredDistance(double* featureA, double* featureB){
-//	printFeature("A", featureA);
-	//printFeature("B", featureB);
-	double l2_squared_dist = 0, current;
-	for (int i = 0 ; i < 128 ; i++)
+	double dist = 0.0, current;
+	int i;
+	for (i=0 ; i<128 ; i++)
 	{
 		current = featureA[i]-featureB[i];
-		l2_squared_dist += current*current;
-		assert(l2_squared_dist>=0);
+		dist += current*current;
+		assert(dist>=0.0);
 	}
-	//printf("l2 dist : %f" , l2_squared_dist);
-	//fflush(NULL);
-	return l2_squared_dist;
+	return dist;
 }
-
-typedef struct distanceWithIndex {
-	double distance;
-	int index;
-} distanceWithIndex;
 
 int distanceWithIndexComparator(const void * a, const void * b) {
 	distanceWithIndex** item1;
@@ -207,35 +143,23 @@ int distanceWithIndexComparator(const void * a, const void * b) {
 	item1 = (distanceWithIndex**)a;
 	item2 = (distanceWithIndex**)b;
 
-	//printf("comparing [%d:] %f with [%d] :%f\n", (**item1).index, (**item1).distance, (**item2).index, (**item2).distance);
-	//fflush(NULL);
-
 	dist = (*item1)->distance - (*item2)->distance;
 
 	if (dist < 0.0)
 	{
-		//printf("returning -1\n");
-			//fflush(NULL);
-
 		return -1;
 	}
 	if (dist > 0.0){
-
-		//printf("returning 1\n");
-			//fflush(NULL);
-
 		return 1;
 	}
 
-//	printf("returning %d\n",(*item1)->index - (*item2)->index);
-	//	fflush(NULL);
 	return (*item1)->index - (*item2)->index;
 }
 
 int* spBestSIFTL2SquaredDistance(int bestNFeatures, double* featureA,
 		double*** databaseFeatures, int numberOfImages,
 		int* nFeaturesPerImage){
-	int totalNumberOfFeatures = 0;
+	int totalNumberOfFeatures = 0,i,j;
 	distanceWithIndex* curr;
 	distanceWithIndex** distancesArray;
 	int* outputArray;
@@ -246,12 +170,10 @@ int* spBestSIFTL2SquaredDistance(int bestNFeatures, double* featureA,
 
 	if (distancesArray != NULL) {
 		int k = 0;
-		for (int i = 0; i < numberOfImages; i++) {
-			for (int j = 0; j < nFeaturesPerImage[i]; j++) {
+		for (i = 0; i < numberOfImages; i++) {
+			for (j = 0; j < nFeaturesPerImage[i]; j++) {
 				curr = (distanceWithIndex*)malloc(sizeof(distanceWithIndex));
-				double temp =spL2SquaredDistance(databaseFeatures[i][j], featureA);
-				//printf("distance between some feature is %f\n",temp);
-				curr->distance =  temp;
+				curr->distance = spL2SquaredDistance(databaseFeatures[i][j], featureA);
 				curr->index =  i;
 				distancesArray[k] = curr;
 				k++;
@@ -263,11 +185,9 @@ int* spBestSIFTL2SquaredDistance(int bestNFeatures, double* featureA,
 	// TODO - check if we can assume that bestNFeatures <= totalNumberOfFeatures
 	outputArray = (int*)malloc(bestNFeatures*sizeof(int));
 	if (outputArray != NULL) {
-		for (int i = 0; i < bestNFeatures; i++) {
+		for (i = 0; i < bestNFeatures; i++) {
 			outputArray[i] = distancesArray[i]->index;
 		}
 	}
 	return outputArray;
 }
-
-
