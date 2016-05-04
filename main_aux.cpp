@@ -70,6 +70,22 @@ imageData* calcHistAndSIFTDesc(settings* allSettings)
 	return data;
 }
 
+
+settings* testSetInput()
+{
+	settings* allSettings = (settings*)malloc(sizeof(settings));
+	char* folderpath = "./images/"; char* image_prefix = "img"; char* image_suffix = ".png";
+	allSettings->numOfImages = 17;
+	allSettings->numOfBins = 16;
+	allSettings->numOfFeatures = 100;
+
+	//generate files names
+	generateFileNames(folderpath, image_prefix, image_suffix, allSettings);
+
+	return allSettings;
+}
+
+
 settings* setInput()
 {
 	settings* allSettings = (settings*)malloc(sizeof(settings));
@@ -251,7 +267,8 @@ void startInteraction(settings* allSettings, imageData** imagesData)
 }
 
 void start(){
-	settings* allSettings = setInput();
+	//settings* allSettings = setInput();
+	settings* allSettings = testSetInput();
 	imageData* imagesData = calcHistAndSIFTDesc(allSettings);
 	//TODO - THINK CAREFULLY ABOUT CLEANUP !!!! BITCH
 	startInteraction(allSettings, &imagesData);
