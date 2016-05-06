@@ -20,7 +20,7 @@ int** spGetRGBHist(char* str, int nBins)
 	int** return_array;
 	Mat src = imread(str,CV_LOAD_IMAGE_COLOR);
 	if (!src.data){
-		assert(str == NULL);
+		//assert(str == NULL);
 		return NULL; //TODO - check what should we return in this case
 	}
 	//separate the image to rgb planes

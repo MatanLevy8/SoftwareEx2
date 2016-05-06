@@ -3,7 +3,6 @@
 
 void testSetInput(settings* allSettings)
 {
-	allSettings = (settings*)malloc(sizeof(settings));
 	char*  folderpath = "./images/", *image_prefix = "img", *image_suffix = ".png";
 	allSettings->numOfImages = 17;
 	allSettings->numOfBins = 16;

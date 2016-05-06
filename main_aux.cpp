@@ -192,7 +192,8 @@ void importSorted(int index, double distance, keyValue** items)
 			temp1 = temp2;
 		}
 		//clear memory to the last item
-		free(temp1);
+		if (limit == NUM_OF_BEST_DIST_IMGS)
+			free(temp1);
 	}
 	else
 	{
@@ -290,11 +291,6 @@ void compareLocalFeatures(imageData** imagesData,imageData* workingImageData)
 		free(featuresPerImage);
 	if (databaseFeatures != NULL)
 	{
-		for (i=0;i<allSettings->numOfImages;i++)
-		{
-			//TODO - this is not good check if realy nesseccery
-			free(databaseFeatures[i]);
-		}
 		free(databaseFeatures);
 	}
 	if (counterArray != NULL)
@@ -342,11 +338,17 @@ void freeImages(imageData** images)
 void searchSimilarImages(imageData** imagesData,char* imagePath)
 {
 	imageData* workingImageData = calcImageData(imagePath, allSettings->numOfBins, allSettings->numOfFeatures);
+	printf("before comparing global \n");
+	fflush(NULL);
 	compareGlobalFeatures(imagesData, workingImageData);
+	printf("before comparing local \n");
+	fflush(NULL);
 	compareLocalFeatures(imagesData, workingImageData);
-
+	printf("before releasing image data \n");
+	fflush(NULL);
 	freeImageData(workingImageData);
-
+	printf("done work on current image\n");
+	fflush(NULL);
 }
 
 void startInteraction(imageData** imagesData)
@@ -369,8 +371,13 @@ void startInteraction(imageData** imagesData)
 }
 
 void start(){
-	setInput();
-	//testSetInput(allSettings);
+	//setInput();
+
+	//tests
+	allSettings = (settings*)malloc(sizeof(settings));
+	testSetInput(allSettings);
+	//
+
 	imageData** imagesData = calcHistAndSIFTDesc();
 	startInteraction(imagesData);
 

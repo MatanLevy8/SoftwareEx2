@@ -6,7 +6,7 @@
 #include "main_aux.h"
 #include <stdlib.h>
 
-settings* testSetInput();
+void testSetInput(settings*);
 
 void printItems(keyValue* items);
 
