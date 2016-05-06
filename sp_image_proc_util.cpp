@@ -2,9 +2,13 @@
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/xfeatures2d.hpp"
-#include <assert.h>
 
 #define NUM_OF_COLS_IN_RGB 3
+#define RANGE_FOR_RGB 256
+#define NUM_OF_IMAGES_FOR_CALCHIST 1
+#define NUM_OF_CHANELLS_FOR_CALCHIST 0
+#define DIMS_FOR_CALCHIST 1
+#define NUM_OF_ELEMS_IN_FEAT 128
 
 #define DEBUG //TODO - comment this line for production mode
 
@@ -19,29 +23,51 @@ typedef struct distanceWithIndex {
 	int index;
 } distanceWithIndex;
 
+int** fromMatArrayToIntMatrix(int nBins, Mat** planes)
+{
+	int col, bin;
+	int** return_array = (int**)calloc(NUM_OF_COLS_IN_RGB, sizeof(int*));
+
+	if (return_array != NULL)
+	{
+		for (col = 0; col < NUM_OF_COLS_IN_RGB; col++)
+		{
+			return_array[col] = (int*)calloc(nBins, sizeof(int));
+			if (return_array[col] != NULL)
+				for (bin = 0; bin < nBins; bin++)
+					return_array[col][bin] =
+							(int)(planes[col])->at<float>(bin);
+		}
+	}
+	return return_array;
+}
+
 int** spGetRGBHist(char* str, int nBins)
 {
-	//assert(str != NULL && nBins >0);
-	int** return_array;
-	Mat src = imread(str,CV_LOAD_IMAGE_COLOR);
-	if (!src.data){
-		//assert(str == NULL);
+	Mat src = imread(str, CV_LOAD_IMAGE_COLOR);
+	if (!src.data)
 		return NULL; //TODO - check what should we return in this case
-	}
+
 	//separate the image to rgb planes
 	std::vector<Mat> rgb_planes;
-	split(src,rgb_planes);
+	split(src, rgb_planes);
 
 	//set the range for RGB
-	float range[] = {0,256};
+	float range[] = { 0, RANGE_FOR_RGB };
 	const float* histRange = {range};
 
 	Mat r_hist, g_hist, b_hist;
 
-	/// Compute the histograms:
-	calcHist(&rgb_planes[0],1,0,Mat(),b_hist,1,&nBins,&histRange);
-	calcHist(&rgb_planes[1],1,0,Mat(),g_hist,1,&nBins,&histRange);
-	calcHist(&rgb_planes[2],1,0,Mat(),r_hist,1,&nBins,&histRange);
+	/// Compute the histograms
+	calcHist(&rgb_planes[0], NUM_OF_IMAGES_FOR_CALCHIST,
+			NUM_OF_CHANELLS_FOR_CALCHIST, Mat(), b_hist,
+			DIMS_FOR_CALCHIST, &nBins, &histRange);
+	calcHist(&rgb_planes[1], NUM_OF_IMAGES_FOR_CALCHIST,
+			NUM_OF_CHANELLS_FOR_CALCHIST, Mat(), g_hist,
+			DIMS_FOR_CALCHIST, &nBins, &histRange);
+	calcHist(&rgb_planes[2], NUM_OF_IMAGES_FOR_CALCHIST,
+			NUM_OF_CHANELLS_FOR_CALCHIST, Mat(), r_hist,
+			DIMS_FOR_CALCHIST, &nBins, &histRange);
 
 	Mat* planes[2];
 	planes[0] = &b_hist;
@@ -49,100 +75,95 @@ int** spGetRGBHist(char* str, int nBins)
 	planes[2] = &r_hist;
 
 	//create the 2 dimensional array for the output
-	return_array = (int**)calloc(NUM_OF_COLS_IN_RGB, sizeof(int*));
-	//TODO - refactor to function ?
-	if (return_array!=NULL)
-	{
-		for (int i = 0; i < NUM_OF_COLS_IN_RGB; i++)
-		{
-			return_array[i] = (int*)calloc(nBins, sizeof(int));
-			for (int j=0;j<nBins;j++){
-				return_array[i][j] = (int)(planes[i])->at<float>(0,j);
-			}
-		}
-	}
-
-	assert(return_array != NULL);
-	assert(return_array[0] != NULL);
-	assert(return_array[1] != NULL);
-	assert(return_array[2] != NULL);
-	return return_array;
+	return fromMatArrayToIntMatrix(nBins, planes);
 }
 
 double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 {
-	//assert(histA != NULL && histB!= NULL && nBins>0);
-	double l2_squared = 0,current_vector_dist;
+	int col, bin;
+	double current_vector_dist;
 	double current_item;
-	for (int i = 0; i < NUM_OF_COLS_IN_RGB; i++)
+	double l2_squared = 0;
+
+	for (col = 0; col < NUM_OF_COLS_IN_RGB; col++)
 	{
 		current_vector_dist = 0;
-		for (int j=0;j<nBins;j++){
+
+		for (bin = 0; bin < nBins; bin++){
 			{
-				current_item = histA[i][j] - histB[i][j];
-				current_vector_dist += (0.33)*current_item*current_item;
-				assert(current_vector_dist>=0);
+				current_item = histA[col][bin] - histB[col][bin];
+				current_vector_dist += 0.33 * current_item * current_item;
 			}
 		}
+
 		l2_squared += current_vector_dist;
 	}
-	assert(l2_squared>=0);
+
 	return l2_squared;
 }
 
-//TODO - Check if we need to change the name features?
-double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
+//TODO - decide how to unite with int** creator
+double** fromMatTypeToDoubleMat(int *nFeatures, Mat destination_matrix)
 {
-	//assert(str != NULL && maxNFeautres > 0 && nFeatures != NULL);
-	double** output_matrix;
-	std::vector<KeyPoint> keypoints;
-	Mat destination_matrix, src = imread(str,CV_LOAD_IMAGE_GRAYSCALE);
-//	assert(src.data != NULL);
-	if (!src.data){
-		//assert(str == NULL);
-		return NULL; //TODO - check what should we return in this case
-	}
+	int feature, elem;
+	double** output_matrix = (double**)calloc((*nFeatures), sizeof(double*));
 
-	Ptr<xfeatures2d::SiftDescriptorExtractor> detect = xfeatures2d::SIFT::create(maxNFeautres);
-	detect->detect(src,keypoints,Mat());
-	detect->compute(src,keypoints,destination_matrix);
-
-	//TODO - check wtf to do with this shit
-	//set the features count
-
-	//*nFeatures = (int)keypoints.size() < maxNFeautres ? keypoints.size():maxNFeautres;//destination_matrix.rows;
-	*nFeatures = keypoints.size();
-
-
-	//set the return matrix values
-	output_matrix = (double**)calloc((*nFeatures), sizeof(double*));
-	if (output_matrix != NULL){
-		for (int i = 0;i< *nFeatures;i++)
+	if (output_matrix != NULL)
+	{
+		for (feature = 0; feature < *nFeatures; feature++)
 		{
-			output_matrix[i] = (double*)calloc(128, sizeof(double));
-			for (int j = 0 ;j < 128 ;j++)
-			{
-				output_matrix[i][j] = (double)(destination_matrix.at<float>(i,j));
-			}
+			output_matrix[feature] = (double*)calloc(NUM_OF_ELEMS_IN_FEAT,
+					sizeof(double));
+			if (output_matrix[feature] != NULL)
+				for (elem = 0; elem < NUM_OF_ELEMS_IN_FEAT; elem++)
+					output_matrix[feature][elem] =
+						(double)(destination_matrix.at<float>(feature, elem));
 		}
 	}
 
 	return output_matrix;
 }
 
-double spL2SquaredDistance(double* featureA, double* featureB){
-	double dist = 0.0, current;
-	int i;
-	for (i=0 ; i<128 ; i++)
+double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
+{
+	std::vector<KeyPoint> keypoints;
+	Mat destination_matrix;
+	Mat src = imread(str, CV_LOAD_IMAGE_GRAYSCALE);
+
+	if (!src.data)
+		return NULL; //TODO - check what should we return in this case
+
+	Ptr<xfeatures2d::SiftDescriptorExtractor> detect =
+			xfeatures2d::SIFT::create(maxNFeautres);
+	detect->detect(src, keypoints, Mat());
+	detect->compute(src, keypoints, destination_matrix);
+
+	//set the features count
+	//TODO - check wtf to do with this shit
+	//*nFeatures = (int)keypoints.size() < maxNFeautres ? keypoints.size():maxNFeautres;//destination_matrix.rows;
+	*nFeatures = keypoints.size();
+
+	//set the return matrix values
+	return fromMatTypeToDoubleMat(nFeatures, destination_matrix);
+}
+
+double spL2SquaredDistance(double* featureA, double* featureB)
+{
+	double dist = 0.0;
+	double current;
+	int elem;
+
+	for (elem = 0; elem < NUM_OF_ELEMS_IN_FEAT; elem++)
 	{
-		current = featureA[i]-featureB[i];
-		dist += current*current;
-		assert(dist>=0.0);
+		current = featureA[elem] - featureB[elem];
+		dist += current * current;
 	}
+
 	return dist;
 }
 
-int distanceWithIndexComparator(const void * a, const void * b) {
+int distanceWithIndexComparator(const void * a, const void * b)
+{
 	distanceWithIndex** item1;
 	distanceWithIndex** item2;
 	double dist;
@@ -152,53 +173,64 @@ int distanceWithIndexComparator(const void * a, const void * b) {
 	dist = (*item1)->distance - (*item2)->distance;
 
 	if (dist < 0.0)
-	{
 		return -1;
-	}
-	if (dist > 0.0){
+
+	if (dist > 0.0)
 		return 1;
-	}
 
 	return (*item1)->index - (*item2)->index;
 }
 
 int* spBestSIFTL2SquaredDistance(int bestNFeatures, double* featureA,
 		double*** databaseFeatures, int numberOfImages,
-		int* nFeaturesPerImage){
-	int totalNumberOfFeatures = 0, i, j, k;
+		int* nFeaturesPerImage)
+{
+	int totalNumberOfFeatures = 0;
+	int image, imageFeature, feature;
 	distanceWithIndex* curr;
 	distanceWithIndex** distancesArray;
 	int* outputArray;
-	for (int i = 0; i < numberOfImages; i++) {
-		totalNumberOfFeatures += nFeaturesPerImage[i];
-	}
-	distancesArray = (distanceWithIndex**)calloc(totalNumberOfFeatures, sizeof(distanceWithIndex*));
+	for (image = 0; image < numberOfImages; image++)
+		totalNumberOfFeatures += nFeaturesPerImage[image];
+
+	distancesArray = (distanceWithIndex**)calloc(totalNumberOfFeatures,
+			sizeof(distanceWithIndex*));
 
 	if (distancesArray != NULL) {
-		k = 0;
-		for (i = 0; i < numberOfImages; i++) {
-			for (j = 0; j < nFeaturesPerImage[i]; j++) {
+		feature = 0;
+		for (image = 0; image < numberOfImages; image++)
+		{
+			for (imageFeature = 0; imageFeature < nFeaturesPerImage[image];
+					imageFeature++)
+			{
 				curr = (distanceWithIndex*)malloc(sizeof(distanceWithIndex));
-				curr->distance = spL2SquaredDistance(databaseFeatures[i][j], featureA);
-				curr->index =  i;
-				distancesArray[k] = curr;
-				k++;
+				curr->distance = spL2SquaredDistance(
+						databaseFeatures[image][imageFeature], featureA);
+				curr->index = image;
+				distancesArray[feature] = curr;
+				feature++;
 			}
 		}
-		qsort(distancesArray, totalNumberOfFeatures, sizeof(distanceWithIndex*), distanceWithIndexComparator);
+
+		qsort(distancesArray, totalNumberOfFeatures,
+				sizeof(distanceWithIndex*), distanceWithIndexComparator);
 	}
 
 	// TODO - check if we can assume that bestNFeatures <= totalNumberOfFeatures
 	outputArray = (int*)calloc(bestNFeatures, sizeof(int));
-	if (outputArray != NULL) {
-		for (i = 0; i < bestNFeatures; i++) {
-			outputArray[i] = distancesArray[i]->index;
-		}
+	if (outputArray != NULL)
+		for (feature = 0; feature < bestNFeatures; feature++)
+			outputArray[feature] = distancesArray[feature]->index;
+
+	if (distancesArray != NULL)
+	{
+		for (feature = 0; feature < totalNumberOfFeatures; feature++)
+			if (distancesArray[feature] != NULL)
+				free(distancesArray[feature]);
+
+		free(distancesArray);
 	}
-	for (k = 0; k < totalNumberOfFeatures; k++) {
-		free(distancesArray[k]);
-	}
-	free(distancesArray);
 
 	return outputArray;
 }
+
