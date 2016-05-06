@@ -4,10 +4,14 @@
 #include <string.h>
 
 #define DEBUG //TODO - comment this line for production mode
+#define flushNull
 
 #ifdef DEBUG
 #include "tests.h"
+#undef flushNull
+#define flushNull fflush(NULL);
 #endif
+
 
 #define EXITING "Exiting...\n"
 #define ENTER_A_QUERY_IMAGE_OR_TO_TERMINATE "Enter a query image or # to terminate:\n"
@@ -54,9 +58,7 @@ void clearSettings()
 void reportErrorAndExit(const char* message)
 {
 	printf(message);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 	if (allSettings != NULL)
 		clearSettings();
 	exit(-1); //TODO - check what error code should we return
@@ -96,16 +98,13 @@ void setImagesDatabase()
 void getAsPositiveInt(const char* message_type, int* value)
 {
 	printf(ENTER_NUMBER_OF, message_type);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 	scanf("%d", value);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 	if (*value < 1) {
 		char errorMessage[1024];
 		sprintf(errorMessage,ERROR_MESSAGE,message_type);
+		flushNull
 		reportErrorAndExit(errorMessage);
 	}
 }
@@ -119,10 +118,7 @@ void generateFileNames(char* folderpath,char* image_prefix,char* image_suffix){
 		file_path = (char*)safeCalloc(MAX_IMAGE_PATH_LENGTH, sizeof(char));
 
 		sprintf(file_path,"%s%s%d%s",folderpath,image_prefix,i,image_suffix);
-
-		#ifdef DEBUG
-			fflush(NULL);
-		#endif
+		flushNull
 
 		allSettings->filePathsArray[i] = file_path;
 	}
@@ -167,33 +163,21 @@ void setInput()
 
 	//Handle input
 	printf(ENTER_IMAGES_DIRECTORY_PATH);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 	scanf("%s", folderpath);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 
 	printf(ENTER_IMAGES_PREFIX);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 	scanf("%s", image_prefix);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 
 	getAsPositiveInt(IMAGES, &(allSettings->numOfImages));
 
 	printf(ENTER_IMAGES_SUFFIX);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 	scanf("%s", image_suffix);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 
 	getAsPositiveInt(BINS, &(allSettings->numOfBins));
 	getAsPositiveInt(FEATURES, &(allSettings->numOfFeatures));
@@ -215,18 +199,13 @@ int getKeyFromkeyValueArray(void* array, int index)
 void printArraysTopItems(void* topItems, int (*funcGetKeyByIndex)( void*, int), const char* message) {
 	int i;
 	printf(message);
-
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 
 	for (i = 0; i < NUM_OF_BEST_DIST_IMGS; i++) {
 
 		printf("%d%s", funcGetKeyByIndex(topItems,i),
 				i == (NUM_OF_BEST_DIST_IMGS - 1) ? "\n" : ", ");
-		#ifdef DEBUG
-			fflush(NULL);
-		#endif
+		flushNull
 	}
 }
 
@@ -485,13 +464,9 @@ void searchSimilarImages(char* imagePath)
  */
 void setPathFromUser(char* workingImagePath) {
 	printf(ENTER_A_QUERY_IMAGE_OR_TO_TERMINATE);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 	scanf("%s", workingImagePath);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 }
 
 /**
@@ -517,9 +492,7 @@ void startInteraction()
 
 	//announce the user for exiting
 	printf(EXITING);
-	#ifdef DEBUG
-		fflush(NULL);
-	#endif
+	flushNull
 }
 
 void start(){
