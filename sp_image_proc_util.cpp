@@ -1,11 +1,16 @@
 #include "sp_image_proc_util.h"
-//#include "tests.h" //TODO - DONT FORGET TO DELETE THIS
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include <assert.h>
 
 #define NUM_OF_COLS_IN_RGB 3
+
+#define DEBUG //TODO - comment this line for production mode
+
+#ifdef DEBUG
+#include "tests.h"
+#endif
 
 using namespace cv;
 
@@ -16,7 +21,7 @@ typedef struct distanceWithIndex {
 
 int** spGetRGBHist(char* str, int nBins)
 {
-	assert(str != NULL && nBins >0);
+	//assert(str != NULL && nBins >0);
 	int** return_array;
 	Mat src = imread(str,CV_LOAD_IMAGE_COLOR);
 	if (!src.data){
@@ -66,7 +71,7 @@ int** spGetRGBHist(char* str, int nBins)
 
 double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 {
-	assert(histA != NULL && histB!= NULL && nBins>0);
+	//assert(histA != NULL && histB!= NULL && nBins>0);
 	double l2_squared = 0,current_vector_dist;
 	double current_item;
 	for (int i = 0; i < NUM_OF_COLS_IN_RGB; i++)
@@ -88,11 +93,15 @@ double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 //TODO - Check if we need to change the name features?
 double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
 {
-	assert(str != NULL && maxNFeautres > 0 && nFeatures != NULL);
+	//assert(str != NULL && maxNFeautres > 0 && nFeatures != NULL);
 	double** output_matrix;
 	std::vector<KeyPoint> keypoints;
 	Mat destination_matrix, src = imread(str,CV_LOAD_IMAGE_GRAYSCALE);
-	assert(src.data != NULL);
+//	assert(src.data != NULL);
+	if (!src.data){
+		//assert(str == NULL);
+		return NULL; //TODO - check what should we return in this case
+	}
 
 	Ptr<xfeatures2d::SiftDescriptorExtractor> detect = xfeatures2d::SIFT::create(maxNFeautres);
 	detect->detect(src,keypoints,Mat());

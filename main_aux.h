@@ -14,6 +14,11 @@ typedef struct imageData{
 	int nFeatures;
 } imageData;
 
+typedef struct imagesDatabase{
+	double*** databaseFeatures;
+	int* featuresPerImage;
+} imagesDatabase;
+
 typedef struct keyValue{
 	int key;
 	double value;
@@ -21,6 +26,9 @@ typedef struct keyValue{
 
 void generateFileNames(char* folderpath,char* image_prefix,char* image_suffix);
 
+/**
+ * The method used in order to start the process.
+ */
 void start();
 
 
