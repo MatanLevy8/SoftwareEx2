@@ -524,11 +524,10 @@ void startInteraction()
 
 void start(){
 	//sets the input data
-	setInput();
 #ifdef DEBUG
 	//tests - debug mode
-	//allSettings = (settings*)safeCalloc(1, sizeof(settings));
-	//testSetInput(allSettings);
+	allSettings = (settings*)safeCalloc(1, sizeof(settings));
+	testSetInput(allSettings);
 #else
 	//production
 	setInput();
