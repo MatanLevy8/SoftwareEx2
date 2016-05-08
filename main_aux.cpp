@@ -4,7 +4,7 @@
 #include <string.h>
 #include "main_aux.h"
 
-#define DEBUG //TODO - comment this line for production mode
+//#define DEBUG //TODO - comment this line for production mode
 #define flushNull
 
 #ifdef DEBUG
@@ -92,8 +92,8 @@ void freeImages()
 		{
 			freeImageData(imagesData[i]);
 		}
+		free(imagesData);
 	}
-	free(imagesData);
 }
 
 /*
@@ -476,10 +476,7 @@ void compareGlobalFeatures(imageData* workingImageData )
  * @topItems - integer array used in the local compare method
  * @resultsArray - integer array used in the local compare method
  */
-void freeDataFromLocalDescProcess(int* counterArray, int* topItems, int* resultsArray) {
-	if (resultsArray != NULL)
-		free(resultsArray);
-
+void freeDataFromLocalDescProcess(int* counterArray, int* topItems) {
 	if (topItems != NULL)
 		free(topItems);
 
@@ -547,6 +544,9 @@ void compareLocalFeatures(imageData* workingImageData)
 		{
 			counterArray[resultsArray[j]]++;
 		}
+
+		if (resultsArray != NULL)
+			free(resultsArray);
 	}
 
 	//sort the index counter array and get the best 5
@@ -554,7 +554,7 @@ void compareLocalFeatures(imageData* workingImageData)
 	printArraysTopItems(topItems,&getKeyFromIntArray ,NEAREST_IMAGES_USING_LOCAL_DESCRIPTORS);
 
 	//free data
-	freeDataFromLocalDescProcess(counterArray, topItems, resultsArray);
+	freeDataFromLocalDescProcess(counterArray, topItems);
 }
 
 /**
@@ -609,8 +609,9 @@ void startInteraction()
 
 void start(){
 	//register the memory freeing methods at exit
-	atexit(&freeImagesAndDatabase);
 	atexit(&clearSettings);
+	atexit(&freeImagesAndDatabase);
+
 
 	//sets the input data
 #ifdef DEBUG

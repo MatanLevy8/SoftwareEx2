@@ -11,7 +11,7 @@
 #define NUM_OF_ELEMS_IN_FEAT 128
 #define ALLOCATION_ERROR_MESSAGE "An error occurred - allocation failure\n"
 
-#define DEBUG //TODO - comment this line for production mode
+//#define DEBUG //TODO - comment this line for production mode
 #define flushNull
 
 #ifdef DEBUG
