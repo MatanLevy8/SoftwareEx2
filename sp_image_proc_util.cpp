@@ -89,10 +89,15 @@ int** spGetRGBHist(char* str, int nBins)
 {
 	std::vector<Mat> rgb_planes;
 	Mat r_hist, g_hist, b_hist;
-	Mat* planes[3];
-	Mat src = imread(str, CV_LOAD_IMAGE_COLOR);
+	Mat* planes[3], src;
 	float range[] = { 0, RANGE_FOR_RGB }; //set the range for RGB
 	const float* histRange = {range};
+
+	if (nBins <= 0)
+		return NULL;
+
+	src = imread(str, CV_LOAD_IMAGE_COLOR);
+
 	if (!src.data)
 		return NULL;
 
@@ -125,6 +130,9 @@ double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 	double current_vector_dist;
 	double current_item;
 	double l2_squared = 0;
+
+	if (nBins <=0 || histA == NULL || histB == NULL)
+		return -1;
 
 	for (col = 0; col < NUM_OF_COLS_IN_RGB; col++)
 	{
@@ -177,7 +185,12 @@ double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
 {
 	std::vector<KeyPoint> keypoints;
 	Mat destination_matrix;
-	Mat src = imread(str, CV_LOAD_IMAGE_GRAYSCALE);
+	Mat src;
+
+	if (str == NULL || maxNFeautres <= 0 || nFeatures == NULL)
+		return NULL;
+
+	src =  imread(str, CV_LOAD_IMAGE_GRAYSCALE);
 
 	if (!src.data)
 		return NULL;
@@ -200,6 +213,9 @@ double spL2SquaredDistance(double* featureA, double* featureB)
 	double dist = 0.0;
 	double current;
 	int elem;
+
+	if (featureA == NULL || featureB == NULL)
+		return -1;
 
 	for (elem = 0; elem < NUM_OF_ELEMS_IN_FEAT; elem++)
 	{
@@ -344,8 +360,14 @@ int* spBestSIFTL2SquaredDistance(int bestNFeatures, double* featureA,
 {
 	distanceWithIndex** distancesArray;
 	int* outputArray;
-	int totalNumberOfFeatures = calcTotalNumberOfFeatures(numberOfImages,
-			nFeaturesPerImage); // calculate total number of features
+	int totalNumberOfFeatures;
+
+	if (featureA == NULL || databaseFeatures == NULL || numberOfImages <= 1 || nFeaturesPerImage == NULL)
+		return NULL;
+
+	totalNumberOfFeatures = calcTotalNumberOfFeatures(numberOfImages,
+				nFeaturesPerImage); // calculate total number of features
+
 
 	// create distances array, fill it and sort it
 	distancesArray = createAndSortDistancesArray(totalNumberOfFeatures,
