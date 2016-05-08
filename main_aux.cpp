@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "main_aux.h"
 
 #define DEBUG //TODO - comment this line for production mode
 #define flushNull
@@ -150,7 +151,7 @@ void clearSettings()
  */
 void reportErrorAndExit(const char* message)
 {
-	printf(message);
+	printf("%s",message);
 	flushNull
 	/*if (allSettings != NULL){
 		freeImagesAndDatabase();
@@ -232,7 +233,7 @@ void getAsPositiveInt(const char* message_type, int* value)
 char* getAsString(const char* message)
 {
 	char* response = (char*)safeCalloc(1024,sizeof(char));
-	printf(message);
+	printf("%s",message);
 	flushNull
 	scanf("%s", response);
 	flushNull
@@ -363,7 +364,7 @@ int getKeyFromkeyValueArray(void* array, int index)
  */
 void printArraysTopItems(void* topItems, int (*funcGetKeyByIndex)( void*, int), const char* message) {
 	int i;
-	printf(message);
+	printf("%s",message);
 	flushNull
 
 	for (i = 0; i < NUM_OF_BEST_DIST_IMGS; i++) {
@@ -602,7 +603,7 @@ void startInteraction()
 	free(workingImagePath);
 
 	//announce the user for exiting
-	printf(EXITING);
+	printf("%s",EXITING);
 	flushNull
 }
 

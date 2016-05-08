@@ -35,7 +35,7 @@ typedef struct distanceWithIndex {
  */
 void reportAllocationErrorAndExit_image_proc()
 {
-	printf(ALLOCATION_ERROR_MESSAGE);
+	printf("%s",ALLOCATION_ERROR_MESSAGE);
 	flushNull
 	exit(1);
 }
