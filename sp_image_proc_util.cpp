@@ -93,7 +93,7 @@ int** spGetRGBHist(char* str, int nBins)
 	float range[] = { 0, RANGE_FOR_RGB }; //set the range for RGB
 	const float* histRange = {range};
 
-	if (nBins <= 0)
+	if (nBins <= 0 || str == NULL)
 		return NULL;
 
 	src = imread(str, CV_LOAD_IMAGE_COLOR);
