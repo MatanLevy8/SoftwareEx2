@@ -9,11 +9,15 @@
 #define NUM_OF_CHANELLS_FOR_CALCHIST 0
 #define DIMS_FOR_CALCHIST 1
 #define NUM_OF_ELEMS_IN_FEAT 128
+#define ALLOCATION_ERROR_MESSAGE "An error occurred - allocation failure\n"
+
 
 #define DEBUG //TODO - comment this line for production mode
+#define flushNull
 
 #ifdef DEBUG
-#include "tests.h"
+#undef flushNull
+#define flushNull fflush(NULL);
 #endif
 
 using namespace cv;
@@ -22,6 +26,33 @@ typedef struct distanceWithIndex {
 	double distance;
 	int index;
 } distanceWithIndex;
+
+
+void reportAllocationErrorAndExit_image_proc()
+{
+	printf(ALLOCATION_ERROR_MESSAGE);
+	flushNull
+	exit(1);
+}
+
+
+/*
+ * A bridge for allocating memory, the method acts as 'calloc' does,
+ * but prompt of failure and exists the program if it could not allocate the requested memory
+ * @itemsCount - the number of items to be allocated
+ * @sizeOfItem - the size of each item
+ * @returns - a void pointer to the allocated memory
+ */
+void* safeCalloc_image_proc(int itemsCount, int sizeOfItem)
+{
+	void* memoryPointer = calloc(itemsCount, sizeOfItem);
+	if (memoryPointer == NULL) //allocation failed
+		reportAllocationErrorAndExit_image_proc();
+	return memoryPointer;
+}
+
+
+
 
 int** fromMatArrayToIntMatrix(int nBins, Mat** planes)
 {
@@ -139,8 +170,6 @@ double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
 	detect->compute(src, keypoints, destination_matrix);
 
 	//set the features count
-	//TODO - check wtf to do with this shit
-	//*nFeatures = (int)keypoints.size() < maxNFeautres ? keypoints.size():maxNFeautres;//destination_matrix.rows;
 	*nFeatures = keypoints.size();
 
 	//set the return matrix values

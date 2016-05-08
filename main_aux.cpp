@@ -12,7 +12,6 @@
 #define flushNull fflush(NULL);
 #endif
 
-
 #define EXITING "Exiting...\n"
 #define ENTER_A_QUERY_IMAGE_OR_TO_TERMINATE "Enter a query image or # to terminate:\n"
 #define NEAREST_IMAGES_USING_LOCAL_DESCRIPTORS "Nearest images using local descriptors:\n"
@@ -47,9 +46,6 @@ imageData** imagesData = NULL;
  * A pointer to a structure that holds the images data manipulated in way that is convenient to use with the "sp_image_proc_utils"
  */
 imagesDatabase* allImagesDatabase = NULL;
-
-
-
 
 /**
  * The method gets an image and frees the memory allocated to each one of its parts, and than free the memory for his pointer.
@@ -156,11 +152,11 @@ void reportErrorAndExit(const char* message)
 {
 	printf(message);
 	flushNull
-	if (allSettings != NULL){
+	/*if (allSettings != NULL){
 		freeImagesAndDatabase();
 		clearSettings();
-	}
-	exit(-1); //TODO - check what error code should we return
+	}*/
+	exit(1); //TODO - check what error code should we return
 }
 
 /*
@@ -560,8 +556,6 @@ void compareLocalFeatures(imageData* workingImageData)
 	freeDataFromLocalDescProcess(counterArray, topItems, resultsArray);
 }
 
-
-
 /**
  * The method gets a path to an image,
  * it loads the image, compare it to the database images and ouptputs the comparison results.
@@ -613,6 +607,10 @@ void startInteraction()
 }
 
 void start(){
+	//register the memory freeing methods at exit
+	atexit(&freeImagesAndDatabase);
+	atexit(&clearSettings);
+
 	//sets the input data
 #ifdef DEBUG
 	//tests - debug mode
@@ -629,7 +627,6 @@ void start(){
 	//starts the user interaction
 	startInteraction();
 
-	//free memory and exit
-	freeImagesAndDatabase();
-	clearSettings();
+	//free memory ("atexit") and exit
+	exit(0);
 }
