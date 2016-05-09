@@ -11,7 +11,7 @@
 #define NUM_OF_ELEMS_IN_FEAT 128
 #define ALLOCATION_ERROR_MESSAGE "An error occurred - allocation failure\n"
 
-//#define DEBUG //TODO - comment this line for production mode
+#define DEBUG //TODO - comment this line for production mode
 #define flushNull
 
 #ifdef DEBUG
@@ -51,7 +51,7 @@ void reportAllocationErrorAndExit_image_proc()
 void* safeCalloc_image_proc(int itemsCount, int sizeOfItem)
 {
 	void* memoryPointer = calloc(itemsCount, sizeOfItem);
-	if (memoryPointer == NULL) //allocation failed
+	if (memoryPointer == NULL) // allocation failed
 		reportAllocationErrorAndExit_image_proc();
 	return memoryPointer;
 }
@@ -76,9 +76,11 @@ int** RGBPlanesAsIntMatrix(int nBins, Mat** planes)
 		{
 			return_array[col] = (int*)safeCalloc_image_proc(nBins, sizeof(int));
 			if (return_array[col] != NULL)
+			{
 				for (bin = 0; bin < nBins; bin++)
 					return_array[col][bin] =
 							(int)(planes[col])->at<float>(bin);
+			}
 		}
 	}
 
@@ -93,7 +95,7 @@ int** spGetRGBHist(char* str, int nBins)
 	float range[] = { 0, RANGE_FOR_RGB }; //set the range for RGB
 	const float* histRange = {range};
 
-	if (nBins <= 0 || str == NULL)
+	if (str == NULL || nBins <= 0)
 		return NULL;
 
 	src = imread(str, CV_LOAD_IMAGE_COLOR);
@@ -116,9 +118,9 @@ int** spGetRGBHist(char* str, int nBins)
 			DIMS_FOR_CALCHIST, &nBins, &histRange);
 
 	// fill the Mat* array
-	planes[0] = &b_hist;
+	planes[0] = &r_hist;
 	planes[1] = &g_hist;
-	planes[2] = &r_hist;
+	planes[2] = &b_hist;
 
 	//create the 2 dimensional array for the output and return it
 	return RGBPlanesAsIntMatrix(nBins, planes);
@@ -131,18 +133,17 @@ double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 	double current_item;
 	double l2_squared = 0;
 
-	if (nBins <=0 || histA == NULL || histB == NULL)
+	if (nBins <= 0 || histA == NULL || histB == NULL)
 		return -1;
 
 	for (col = 0; col < NUM_OF_COLS_IN_RGB; col++)
 	{
 		current_vector_dist = 0;
 
-		for (bin = 0; bin < nBins; bin++){
-			{
+		for (bin = 0; bin < nBins; bin++)
+		{
 				current_item = histA[col][bin] - histB[col][bin];
 				current_vector_dist += 0.33 * current_item * current_item;
-			}
 		}
 
 		l2_squared += current_vector_dist;
@@ -155,9 +156,8 @@ double spRGBHistL2Distance(int** histA, int** histB, int nBins)
  * allocates a double matrix, fills it from the Mat received
  * and returns it.
  * @nFeatures - a pointer the number of features in the image
- * @planes - an array of Mat*, each item in the array represents different
- * color: R, G, B
- * @return an integer matrix, representing the RGB histogram
+ * @destination_matrix - a Mat, representing the matrix returned from OpenCV.
+ * @return a double matrix, representing the Sift Descriptors
  */
 double** SiftDescriptorsAsDoubleMatrix(int *nFeatures, Mat destination_matrix)
 {
@@ -172,9 +172,11 @@ double** SiftDescriptorsAsDoubleMatrix(int *nFeatures, Mat destination_matrix)
 			output_matrix[feature] = (double*)safeCalloc_image_proc(
 					NUM_OF_ELEMS_IN_FEAT, sizeof(double));
 			if (output_matrix[feature] != NULL)
+			{
 				for (elem = 0; elem < NUM_OF_ELEMS_IN_FEAT; elem++)
 					output_matrix[feature][elem] =
 						(double)(destination_matrix.at<float>(feature, elem));
+			}
 		}
 	}
 
@@ -291,7 +293,8 @@ distanceWithIndex** createAndSortDistancesArray(int totalNumberOfFeatures,
 			(distanceWithIndex**)safeCalloc_image_proc(totalNumberOfFeatures,
 					sizeof(distanceWithIndex*));
 
-	if (distancesArray != NULL) {
+	if (distancesArray != NULL)
+	{
 		feature = 0;
 		for (imageIndex = 0; imageIndex < numberOfImages; imageIndex++)
 		{
@@ -329,9 +332,11 @@ int* createOutputArray(int bestNFeatures, distanceWithIndex** distancesArray)
 {
 	int feature;
 	int *outputArray = (int*)safeCalloc_image_proc(bestNFeatures, sizeof(int));
-		if (outputArray != NULL)
-			for (feature = 0; feature < bestNFeatures; feature++)
-				outputArray[feature] = distancesArray[feature]->index;
+	if (outputArray != NULL)
+	{
+		for (feature = 0; feature < bestNFeatures; feature++)
+			outputArray[feature] = distancesArray[feature]->index;
+	}
 	return outputArray;
 }
 
@@ -347,8 +352,10 @@ void distancesArrayCleanup(distanceWithIndex** distancesArray,
 	if (distancesArray != NULL)
 	{
 		for (feature = 0; feature < totalNumberOfFeatures; feature++)
+		{
 			if (distancesArray[feature] != NULL)
 				free(distancesArray[feature]);
+		}
 
 		free(distancesArray);
 	}
@@ -362,7 +369,8 @@ int* spBestSIFTL2SquaredDistance(int bestNFeatures, double* featureA,
 	int* outputArray;
 	int totalNumberOfFeatures;
 
-	if (featureA == NULL || databaseFeatures == NULL || numberOfImages <= 1 || nFeaturesPerImage == NULL)
+	if (featureA == NULL || databaseFeatures == NULL ||
+			numberOfImages <= 1 || nFeaturesPerImage == NULL)
 		return NULL;
 
 	totalNumberOfFeatures = calcTotalNumberOfFeatures(numberOfImages,
