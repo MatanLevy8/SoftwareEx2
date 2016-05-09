@@ -4,7 +4,7 @@
 #include <string.h>
 #include "main_aux.h"
 
-//#define DEBUG //TODO - comment this line for production mode
+#define DEBUG //TODO - comment this line for production mode
 #define flushNull
 
 #ifdef DEBUG
@@ -208,21 +208,34 @@ void setImagesDatabase()
 /*
  * The method requests the user to input a positive integer,
  * and update its input to the "value" item given as a pointer.
+ * the method verifies that the input is greater than the limit
  * @message_type - a message suffix presented to the user before the input
  * @value - a pointer to an integer, where the result would be saved
+ * @limit - the limit to verify with
  */
-void getAsPositiveInt(const char* message_type, int* value)
+void getAsLimitedInt(const char* message_type, int* value, int limit)
 {
 	printf(ENTER_NUMBER_OF, message_type);
 	flushNull
 	scanf("%d", value);
 	flushNull
-	if (*value < 1) {
+	if (*value < limit) {
 		char errorMessage[1024];
 		sprintf(errorMessage,ERROR_MESSAGE,message_type);
 		flushNull
 		reportErrorAndExit(errorMessage);
 	}
+}
+
+/*
+ * The method requests the user to input a positive integer,
+ * and update its input to the "value" item given as a pointer.
+ * @message_type - a message suffix presented to the user before the input
+ * @value - a pointer to an integer, where the result would be saved
+ */
+void getAsPositiveInt(const char* message_type, int* value)
+{
+	getAsLimitedInt(message_type,value,1);
 }
 
 /*
@@ -315,7 +328,7 @@ void setInput()
 	//Handle input
 	folderpath = getAsString(ENTER_IMAGES_DIRECTORY_PATH);
 	image_prefix = getAsString(ENTER_IMAGES_PREFIX);
-	getAsPositiveInt(IMAGES, &(allSettings->numOfImages));
+	getAsLimitedInt(IMAGES, &(allSettings->numOfImages),5);
 	image_suffix = getAsString(ENTER_IMAGES_SUFFIX);
 	getAsPositiveInt(BINS, &(allSettings->numOfBins));
 	getAsPositiveInt(FEATURES, &(allSettings->numOfFeatures));
