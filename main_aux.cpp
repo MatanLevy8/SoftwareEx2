@@ -381,16 +381,16 @@ void printArraysTopItems(void* topItems, int (*funcGetKeyByIndex)( void*, int), 
 	flushNull
 
 	for (i = 0; i < NUM_OF_BEST_DIST_IMGS; i++) {
-
 		printf("%d%s", funcGetKeyByIndex(topItems,i),
-				i == (NUM_OF_BEST_DIST_IMGS - 1) ? "\n" : ", ");
+						i == (NUM_OF_BEST_DIST_IMGS - 1) ? "\n" : ", ");
 		flushNull
 	}
 }
 
 /*
  * The method gets an array of top NUM_OF_BEST_DIST_IMGS keyValues (as pointers)
- * and insert a new item if it has place among the best NUM_OF_BEST_DIST_IMGS while keeping the array sorted
+ * and insert a new item if it has place among the best NUM_OF_BEST_DIST_IMGS
+ * while keeping the array sorted
  * @index - the index of the keyValue item
  * @distance - the value of the keyValue item
  * @items - the array of pointers sorted by distance ascending
@@ -409,7 +409,10 @@ void importSorted(int index, double distance, keyValue** items)
 		limit = NUM_OF_BEST_DIST_IMGS;
 
 	//find where (if needed) should we insert the current item
-	for (j=0; j < limit && distance > items[j]->value ;j++);
+	// the distance >= items[j] (and not >) is for us to keep the array sub-sorted by the index
+	//if 2 images have the same distance, the second one that is inserted, which also has the greater index,
+	//won't be inserted before. as requested
+	for (j=0; j < limit && distance >= items[j]->value ;j++);
 
 	//fix off by 1 problem when shifting the rest of the items
 	if (limit < NUM_OF_BEST_DIST_IMGS)
@@ -476,6 +479,17 @@ void compareGlobalFeatures(imageData* workingImageData )
 				workingImageData->rgbHist,allSettings->numOfBins) ,topItems);
 	}
 
+	#ifdef DEBUG
+	printf("counter array for GLOBAL features\n");
+	flushNull
+	for (i=0;i<NUM_OF_BEST_DIST_IMGS;i++)
+	{
+		printf("[%d] : %f ; ",topItems[i]->key,topItems[i]->value);
+		flushNull
+	}
+	printf("\n");
+	#endif
+
 	//print items
 	printArraysTopItems(topItems,&getKeyFromkeyValueArray ,NEAREST_IMAGES_USING_GLOBAL_DESCRIPTORS);
 
@@ -510,6 +524,8 @@ int* getTopItems(int* counterArray) {
 	for (j = 0; j < NUM_OF_BEST_DIST_IMGS; j++) {
 		tempMaxIndex = 0;
 		for (i = 0; i < allSettings->numOfImages; i++) {
+			//the ">" is important (not >=) to keep the "internal sort" so that
+			//if 2 indexes has the same value we will have the smaller one first
 			if (counterArray[i] > counterArray[tempMaxIndex]) {
 				tempMaxIndex = i;
 			}
@@ -561,6 +577,17 @@ void compareLocalFeatures(imageData* workingImageData)
 		if (resultsArray != NULL)
 			free(resultsArray);
 	}
+
+	#ifdef DEBUG
+	printf("counter array for local features\n");
+	flushNull
+	for (i=0;i<allSettings->numOfImages;i++)
+	{
+		printf("[%d] : %d ; ",i,counterArray[i]);
+		flushNull
+	}
+	printf("\n");
+	#endif
 
 	//sort the index counter array and get the best NUM_OF_BEST_DIST_IMGS
 	topItems = getTopItems(counterArray);

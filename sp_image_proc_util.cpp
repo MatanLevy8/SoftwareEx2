@@ -316,6 +316,33 @@ distanceWithIndex** createAndSortDistancesArray(int totalNumberOfFeatures,
 		// to index
 		qsort(distancesArray, totalNumberOfFeatures,
 				sizeof(distanceWithIndex*), distanceWithIndexComparator);
+
+		#ifdef DEBUG
+		//printf("after q sort :\n");
+		//flushNull
+		for (int i =0 ; i < totalNumberOfFeatures;i++)
+		{
+			for (int j = 0 ; j< totalNumberOfFeatures;j++)
+			{
+				if (distancesArray[i]->distance == distancesArray[j]->distance &&
+						i < j &&
+						distancesArray[i]->index > distancesArray[j]->index)
+				{
+					printf("problem in sort :\n");
+					flushNull
+				}
+				if (distancesArray[i]->distance == distancesArray[j]->distance
+						&& i < j &&
+						distancesArray[i]->index < distancesArray[j]->index)
+				{
+					printf("G\n");
+					flushNull
+				}
+			}
+		}
+		//printf("\n");
+		#endif
+
 	}
 
 	return distancesArray;
