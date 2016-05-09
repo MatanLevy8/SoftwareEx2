@@ -192,7 +192,7 @@ void setImagesDatabase()
 	int i;
 	allImagesDatabase = (imagesDatabase*)safeCalloc(1, sizeof(imagesDatabase));
 
-	//step 1 - create the database and the number of features array
+	//create the database and the number of features array
 	allImagesDatabase->databaseFeatures = (double***)safeCalloc(allSettings->numOfImages, sizeof(double**));
 
 	allImagesDatabase->featuresPerImage=(int*)safeCalloc(allSettings->numOfImages, sizeof(int));
