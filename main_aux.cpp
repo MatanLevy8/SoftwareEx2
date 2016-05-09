@@ -328,7 +328,7 @@ void setInput()
 	//Handle input
 	folderpath = getAsString(ENTER_IMAGES_DIRECTORY_PATH);
 	image_prefix = getAsString(ENTER_IMAGES_PREFIX);
-	getAsLimitedInt(IMAGES, &(allSettings->numOfImages),5);
+	getAsLimitedInt(IMAGES, &(allSettings->numOfImages),NUM_OF_BEST_DIST_IMGS);
 	image_suffix = getAsString(ENTER_IMAGES_SUFFIX);
 	getAsPositiveInt(BINS, &(allSettings->numOfBins));
 	getAsPositiveInt(FEATURES, &(allSettings->numOfFeatures));
@@ -404,7 +404,7 @@ void importSorted(int index, double distance, keyValue** items)
 	current->value = distance;
 	keyValue *temp1, *temp2;
 
-	//used to handle the case that we haven't inserted 5 items yet
+	//used to handle the case that we haven't inserted NUM_OF_BEST_DIST_IMGS items yet
 	if (limit > NUM_OF_BEST_DIST_IMGS)
 		limit = NUM_OF_BEST_DIST_IMGS;
 
@@ -562,7 +562,7 @@ void compareLocalFeatures(imageData* workingImageData)
 			free(resultsArray);
 	}
 
-	//sort the index counter array and get the best 5
+	//sort the index counter array and get the best NUM_OF_BEST_DIST_IMGS
 	topItems = getTopItems(counterArray);
 	printArraysTopItems(topItems,&getKeyFromIntArray ,NEAREST_IMAGES_USING_LOCAL_DESCRIPTORS);
 
@@ -625,12 +625,12 @@ void start(){
 	atexit(&clearSettings);
 	atexit(&freeImagesAndDatabase);
 
-
+	setInput();
 	//sets the input data
 #ifdef DEBUG
 	//tests - debug mode
-	allSettings = (settings*)safeCalloc(1, sizeof(settings));
-	testSetInput(allSettings);
+	//allSettings = (settings*)safeCalloc(1, sizeof(settings));
+	//testSetInput(allSettings);
 #else
 	//production
 	setInput();
