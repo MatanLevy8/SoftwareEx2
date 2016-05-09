@@ -36,7 +36,7 @@ typedef struct distanceWithIndex {
  */
 void reportAllocationErrorAndExit_image_proc()
 {
-	printf("%s",ALLOCATION_ERROR_MESSAGE);
+	printf("%s", ALLOCATION_ERROR_MESSAGE);
 	flushNull
 	exit(1);
 }
@@ -68,30 +68,30 @@ void* safeCalloc_image_proc(int itemsCount, int sizeOfItem)
 int** RGBPlanesAsIntMatrix(int nBins, Mat** planes)
 {
 	int col, bin;
-	int** return_array = (int**)safeCalloc_image_proc(NUM_OF_COLS_IN_RGB,
+	int** returnArray = (int**)safeCalloc_image_proc(NUM_OF_COLS_IN_RGB,
 			sizeof(int*));
 
-	if (return_array != NULL)
+	if (returnArray != NULL)
 	{
 		for (col = 0; col < NUM_OF_COLS_IN_RGB; col++)
 		{
-			return_array[col] = (int*)safeCalloc_image_proc(nBins, sizeof(int));
-			if (return_array[col] != NULL)
+			returnArray[col] = (int*)safeCalloc_image_proc(nBins, sizeof(int));
+			if (returnArray[col] != NULL)
 			{
 				for (bin = 0; bin < nBins; bin++)
-					return_array[col][bin] =
+					returnArray[col][bin] =
 							(int)(planes[col])->at<float>(bin);
 			}
 		}
 	}
 
-	return return_array;
+	return returnArray;
 }
 
 int** spGetRGBHist(char* str, int nBins)
 {
-	std::vector<Mat> rgb_planes;
-	Mat r_hist, g_hist, b_hist;
+	std::vector<Mat> rgbPlanes;
+	Mat rHist, gHist, bHist;
 	Mat* planes[NUM_OF_COLS_IN_RGB], src;
 	float range[] = { 0, RANGE_FOR_RGB }; //set the range for RGB
 	const float* histRange = {range};
@@ -105,23 +105,23 @@ int** spGetRGBHist(char* str, int nBins)
 		return NULL;
 
 	//separate the image to rgb planes
-	split(src, rgb_planes);
+	split(src, rgbPlanes);
 
 	/// Compute the histograms
-	calcHist(&rgb_planes[0], NUM_OF_IMAGES_FOR_CALCHIST,
-			NUM_OF_CHANELLS_FOR_CALCHIST, Mat(), b_hist,
+	calcHist(&rgbPlanes[0], NUM_OF_IMAGES_FOR_CALCHIST,
+			NUM_OF_CHANELLS_FOR_CALCHIST, Mat(), bHist,
 			DIMS_FOR_CALCHIST, &nBins, &histRange);
-	calcHist(&rgb_planes[1], NUM_OF_IMAGES_FOR_CALCHIST,
-			NUM_OF_CHANELLS_FOR_CALCHIST, Mat(), g_hist,
+	calcHist(&rgbPlanes[1], NUM_OF_IMAGES_FOR_CALCHIST,
+			NUM_OF_CHANELLS_FOR_CALCHIST, Mat(), gHist,
 			DIMS_FOR_CALCHIST, &nBins, &histRange);
-	calcHist(&rgb_planes[2], NUM_OF_IMAGES_FOR_CALCHIST,
-			NUM_OF_CHANELLS_FOR_CALCHIST, Mat(), r_hist,
+	calcHist(&rgbPlanes[2], NUM_OF_IMAGES_FOR_CALCHIST,
+			NUM_OF_CHANELLS_FOR_CALCHIST, Mat(), rHist,
 			DIMS_FOR_CALCHIST, &nBins, &histRange);
 
 	// fill the Mat* array
-	planes[0] = &r_hist;
-	planes[1] = &g_hist;
-	planes[2] = &b_hist;
+	planes[0] = &rHist;
+	planes[1] = &gHist;
+	planes[2] = &bHist;
 
 	//create the 2 dimensional array for the output and return it
 	return RGBPlanesAsIntMatrix(nBins, planes);
@@ -130,27 +130,27 @@ int** spGetRGBHist(char* str, int nBins)
 double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 {
 	int col, bin;
-	double current_vector_dist;
-	double current_item;
-	double l2_squared = 0;
+	double currentVectorDist;
+	double currentItem;
+	double l2Squared = 0;
 
 	if (nBins <= 0 || histA == NULL || histB == NULL)
 		return DEFAULT_UNSUCCESFUL_VALUE;
 
 	for (col = 0; col < NUM_OF_COLS_IN_RGB; col++)
 	{
-		current_vector_dist = 0;
+		currentVectorDist = 0;
 
 		for (bin = 0; bin < nBins; bin++)
 		{
-				current_item = histA[col][bin] - histB[col][bin];
-				current_vector_dist += 0.33 * current_item * current_item;
+				currentItem = histA[col][bin] - histB[col][bin];
+				currentVectorDist += 0.33 * currentItem * currentItem;
 		}
 
-		l2_squared += current_vector_dist;
+		l2Squared += currentVectorDist;
 	}
 
-	return l2_squared;
+	return l2Squared;
 }
 
 /*
@@ -163,31 +163,31 @@ double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 double** SiftDescriptorsAsDoubleMatrix(int *nFeatures, Mat destination_matrix)
 {
 	int feature, elem;
-	double** output_matrix = (double**)safeCalloc_image_proc((*nFeatures),
+	double** outputMatrix = (double**)safeCalloc_image_proc((*nFeatures),
 			sizeof(double*));
 
-	if (output_matrix != NULL)
+	if (outputMatrix != NULL)
 	{
 		for (feature = 0; feature < *nFeatures; feature++)
 		{
-			output_matrix[feature] = (double*)safeCalloc_image_proc(
+			outputMatrix[feature] = (double*)safeCalloc_image_proc(
 					NUM_OF_ELEMS_IN_FEAT, sizeof(double));
-			if (output_matrix[feature] != NULL)
+			if (outputMatrix[feature] != NULL)
 			{
 				for (elem = 0; elem < NUM_OF_ELEMS_IN_FEAT; elem++)
-					output_matrix[feature][elem] =
+					outputMatrix[feature][elem] =
 						(double)(destination_matrix.at<float>(feature, elem));
 			}
 		}
 	}
 
-	return output_matrix;
+	return outputMatrix;
 }
 
 double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
 {
 	std::vector<KeyPoint> keypoints;
-	Mat destination_matrix;
+	Mat destinationMatrix;
 	Mat src;
 
 	if (str == NULL || maxNFeautres <= 0 || nFeatures == NULL)
@@ -202,13 +202,13 @@ double** spGetSiftDescriptors(char* str, int maxNFeautres, int *nFeatures)
 	Ptr<xfeatures2d::SiftDescriptorExtractor> detect =
 			xfeatures2d::SIFT::create(maxNFeautres);
 	detect->detect(src, keypoints, Mat());
-	detect->compute(src, keypoints, destination_matrix);
+	detect->compute(src, keypoints, destinationMatrix);
 
 	// set the features count
 	*nFeatures = keypoints.size();
 
 	// create the return matrix and fill it
-	return SiftDescriptorsAsDoubleMatrix(nFeatures, destination_matrix);
+	return SiftDescriptorsAsDoubleMatrix(nFeatures, destinationMatrix);
 }
 
 double spL2SquaredDistance(double* featureA, double* featureB)
