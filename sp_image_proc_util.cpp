@@ -10,6 +10,7 @@
 #define DIMS_FOR_CALCHIST 1
 #define NUM_OF_ELEMS_IN_FEAT 128
 #define ALLOCATION_ERROR_MESSAGE "An error occurred - allocation failure\n"
+#define DEFAULT_UNSUCCESFUL_VALUE -1
 
 #define DEBUG //TODO - comment this line for production mode
 #define flushNull
@@ -91,7 +92,7 @@ int** spGetRGBHist(char* str, int nBins)
 {
 	std::vector<Mat> rgb_planes;
 	Mat r_hist, g_hist, b_hist;
-	Mat* planes[3], src;
+	Mat* planes[NUM_OF_COLS_IN_RGB], src;
 	float range[] = { 0, RANGE_FOR_RGB }; //set the range for RGB
 	const float* histRange = {range};
 
@@ -134,7 +135,7 @@ double spRGBHistL2Distance(int** histA, int** histB, int nBins)
 	double l2_squared = 0;
 
 	if (nBins <= 0 || histA == NULL || histB == NULL)
-		return -1;
+		return DEFAULT_UNSUCCESFUL_VALUE;
 
 	for (col = 0; col < NUM_OF_COLS_IN_RGB; col++)
 	{
@@ -217,7 +218,7 @@ double spL2SquaredDistance(double* featureA, double* featureB)
 	int elem;
 
 	if (featureA == NULL || featureB == NULL)
-		return -1;
+		return DEFAULT_UNSUCCESFUL_VALUE;
 
 	for (elem = 0; elem < NUM_OF_ELEMS_IN_FEAT; elem++)
 	{
